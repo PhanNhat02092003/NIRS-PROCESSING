@@ -1,0 +1,14 @@
+#Ignore the following files: *.txt, data, dataset, env, test folder
+*.txt
+*.pyc
+*.pdf
+*.pt
+
+__pycache__/
+*.py[cod]
+
+*.ipynb
+
+lightning_logs/
+data/
+history/
