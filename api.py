@@ -1,4 +1,3 @@
-# app.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,14 +8,19 @@ import pandas as pd
 import numpy as np
 import joblib
 import torch
-from model.classification_model import *
+from utils import *
+import os
+import os
+from dotenv import load_dotenv
+load_dotenv()
+VEGETABLE_CLASSIFICATION_FOLDER = os.getenv("VEGETABLE_CLASSIFICATION_FOLDER")
+VERIFY_SUBSTANCES_FOLDER = os.getenv("VERIFY_SUBSTANCES_FOLDER")
+PREDICT_SUBSTANCES_CONCENTRATION_FOLDER = os.getenv("PREDICT_SUBSTANCES_CONCENTRATION_FOLDER")
 
 app = FastAPI(
-    title="Xử lý các tác vụ liên quan đến phổ NIR",
-    description="API cho phép upload file CSV và trả về kết quả dưới dạng chuỗi",
+    title="Xử lý các tác vụ liên quan đến phổ NIR"
 )
 
-# --- Bật CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -26,21 +30,9 @@ app.add_middleware(
 )
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = SMARTNIR(cfg=SmartNIRClassificationConfig(
-    signal_len=2136,
-    out_ch_per_branch=128,
-    d_model=256,
-    depth=6,
-    n_heads=8,
-    classifier="kan",
-    num_classes=9
-)).to(device)
-
-model.load_state_dict(torch.load("pretrained/smart_nir_classification_1.pth", map_location=device))
-model.to(device)
-model.eval()
-
-
+vegetable_classification_model, vegetable_classification_mean, vegetable_classification_std, vegetable_classification_label_encoder = load_vegetable_classification_model(VEGETABLE_CLASSIFICATION_FOLDER)
+verify_substances_models = load_verify_substances_models(VERIFY_SUBSTANCES_FOLDER)
+predict_substances_concentration_models = load_predict_substances_concentration_models(PREDICT_SUBSTANCES_CONCENTRATION_FOLDER)
 
 def decode_bytes_try_encodings(content: bytes, encodings=("utf-8-sig", "utf-8", "latin-1")) -> str:
     for enc in encodings:
@@ -57,8 +49,23 @@ def decode_bytes_try_encodings(content: bytes, encodings=("utf-8-sig", "utf-8", 
     summary="Phân loại rau củ quả (Cà Chua, Cải Bẹ Xanh, Cải Thìa, Carrot, Đậu Cô Ve, Dưa Leo, Khổ Qua, Mồng Tơi, Xà Lách) sử dụng phổ NIR cho máy 1",
     description="""
 Upload một file CSV và trả về nhãn phân loại.  
-- Input: file CSV (multipart/form-data)  
-- Output: JSON chứa danh sách kết quả phân loại.  
+- Input: file CSV (multipart/form-data)
+    - Format:
+        - Cột ID: ID của mẫu
+        - Cột w_i: bước sóng thứ i (i: 0 -> 2135)
+- Output: JSON chứa danh sách kết quả phân loại.
+    - Format:
+```
+{
+    "predictions": [
+        {
+            "id": "<ID của mẫu>",
+            "result": "Kết quả phân loại"
+        },
+        ...
+    ]
+}
+```
 """
 )
 async def vegetable_classification(file: UploadFile = File(..., description="File CSV cần upload")) -> JSONResponse:
@@ -74,24 +81,31 @@ async def vegetable_classification(file: UploadFile = File(..., description="Fil
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="Không thể giải mã file CSV (encoding không hỗ trợ)")
 
-    stats = np.load("data/classification_data/dataset_1/train/stats.npz")
-    mean, std = stats["mean"], stats["std"]
-    label_encoder = joblib.load("data/classification_data/dataset_1/train/label_encoder.pkl")
+    try:
+        df = pd.read_csv(io.StringIO(text))
+        ids = df['ID'].to_list()
+        df = df.drop(columns=["ID"])
 
-    df = pd.read_csv(io.StringIO(text), index_col=0)
-    X = df.values.astype(np.float32)
+        X = df.values.astype(np.float32)
 
-    X = (X - mean) / std
-    X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
+        X = (X - vegetable_classification_mean) / vegetable_classification_std
+        X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
 
-    with torch.no_grad():
-        logits = model(X_tensor)
-        preds = torch.argmax(logits, dim=1).cpu().numpy()
+        with torch.no_grad():
+            logits = vegetable_classification_model(X_tensor)
+            preds = torch.argmax(logits, dim=1).cpu().numpy()
 
-    # decode thành tên nhãn
-    labels = label_encoder.inverse_transform(preds)
+        labels = vegetable_classification_label_encoder.inverse_transform(preds)
+        results = [
+            {
+                "id": id,
+                "result": label
+            } for id, label in zip(ids, labels)
+        ]
 
-    return JSONResponse(content={"predictions": labels.tolist()})
+        return JSONResponse(content={"predictions": results})
+    except Exception as e:
+        return HTTPException(status_code=500, detail=f"Lỗi khi xử lý: {str(e)}")
 
 @app.post(
     "/nir-processing/machine-1/verify-substances",
@@ -99,9 +113,23 @@ async def vegetable_classification(file: UploadFile = File(..., description="Fil
     tags=["CSV"],
     summary="Xác định sự tồn tại của các hợp chất có trong rau củ quả sử dụng phổ NIR cho máy 1",
     description="""
-Upload một file CSV và trả về nhãn xác nhận.  
-- Input: file CSV (multipart/form-data)  
-- Output: JSON chứa danh sách kết quả.  
+Upload một file CSV và trả về kết quả.  
+- Input: file CSV (multipart/form-data)
+    - Format:
+        - Cột ID: ID của sample
+        - Cột w_i: bước sóng thứ i (i: 0 -> 2135)
+- Output: JSON chứa danh sách kết quả.
+    - Format:
+```
+{
+    "predictions": [
+        "id": "<ID của mẫu>",
+        "result": {
+            "<Tên chất>": "true/false",
+        }
+    ]
+}
+```
 """
 )
 async def verify_substances(file: UploadFile = File(..., description="File CSV cần upload")) -> JSONResponse:
@@ -117,23 +145,110 @@ async def verify_substances(file: UploadFile = File(..., description="File CSV c
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="Không thể giải mã file CSV (encoding không hỗ trợ)")
 
-    stats = np.load("data/classification_data/dataset_1/train/stats.npz")
-    mean, std = stats["mean"], stats["std"]
-    label_encoder = joblib.load("data/classification_data/dataset_1/train/label_encoder.pkl")
+    try:
+        df = pd.read_csv(io.StringIO(text))
+        ids = df['ID'].to_list()
+        df = df.drop(columns=["ID"])
+        X = df.values.astype(np.float32)
 
-    df = pd.read_csv(io.StringIO(text), index_col=0)
-    X = df.values.astype(np.float32)
+        total_predictions = {}
+        for substance in verify_substances_models.keys():
+            if verify_substances_models[substance]:
+                total_predictions[substance] = verify_substances_models.predict(X)
+            else:
+                total_predictions[substance] = [None] * len(X)
+        
+        results = [
+            {
+                "id": ids[idx],
+                "result": {
+                    substance: bool(total_predictions[substance][idx])
+                    for substance in total_predictions.keys()
+                }
+            }
+            for idx in range(len(ids))
+        ]
 
-    X = (X - mean) / std
-    X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
+        return JSONResponse(content={"predictions": results})
+    
+    except Exception as e:
+        return HTTPException(status_code=500, detail=f"Lỗi khi xử lý: {str(e)}")
 
-    with torch.no_grad():
-        logits = model(X_tensor)
-        preds = torch.argmax(logits, dim=1).cpu().numpy()
+@app.post(
+    "/nir-processing/machine-1/predict-substances-concentration",
+    response_class=JSONResponse,
+    tags=["CSV"],
+    summary="Dự đoán nồng độ các hợp chất có trong rau củ quả sử dụng phổ NIR cho máy 1",
+    description="""
+Upload một file CSV và trả về kết quả.  
+- Input: file CSV (multipart/form-data)
+    - Format:
+        - Cột ID: ID của sample
+        - Cột w_i: bước sóng thứ i (i: 0 -> 2135)
+- Output: JSON chứa danh sách kết quả.
+    - Format:
+```
+{
+    "predictions": [
+        "id": "<ID của mẫu>",
+        "result": {
+            "<Tên chất>": "Hàm lượng chất có trong mẫu/None",
+        }
+    ]
+}
+```
+"""
+)
+async def predict_substances_concentration(
+    file: UploadFile = File(..., description="File CSV cần upload")
+) -> JSONResponse:
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File phải có đuôi .csv")
 
-    labels = label_encoder.inverse_transform(preds)
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File rỗng")
 
-    return JSONResponse(content={"predictions": labels.tolist()})
+    try:
+        text = decode_bytes_try_encodings(content)
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Không thể giải mã file CSV (encoding không hỗ trợ)")
 
+    try:
+        df = pd.read_csv(io.StringIO(text))
+        if "ID" not in df.columns:
+            raise HTTPException(status_code=400, detail="File CSV thiếu cột ID")
 
+        ids = df["ID"].to_list()
+        X_df = df.drop(columns=["ID"]).astype(np.float32)
+
+        results = []
+        for idx, sample_id in enumerate(ids):
+            sample_result = {"id": sample_id, "result": {}}
+
+            for substance in verify_substances_models.keys():
+                cls_model = verify_substances_models[substance]
+                reg_model = predict_substances_concentration_models[substance]
+
+                if cls_model is None:
+                    sample_result["result"][substance] = None
+                    continue
+
+                # classification
+                cls_pred = int(cls_model.predict(X_df.iloc[[idx]])[0])
+                if cls_pred == 0:
+                    sample_result["result"][substance] = None
+                else:
+                    if reg_model is not None:
+                        reg_pred = float(reg_model.predict(X_df.iloc[[idx]])[0])
+                        sample_result["result"][substance] = reg_pred
+                    else:
+                        sample_result["result"][substance] = None
+
+            results.append(sample_result)
+
+        return JSONResponse(content={"predictions": results})
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi xử lý: {str(e)}")
 
