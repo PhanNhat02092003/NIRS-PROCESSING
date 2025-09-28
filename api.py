@@ -13,6 +13,7 @@ import os
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import uvicorn
 VEGETABLE_CLASSIFICATION_FOLDER = os.getenv("VEGETABLE_CLASSIFICATION_FOLDER")
 VERIFY_SUBSTANCES_FOLDER = os.getenv("VERIFY_SUBSTANCES_FOLDER")
 PREDICT_SUBSTANCES_CONCENTRATION_FOLDER = os.getenv("PREDICT_SUBSTANCES_CONCENTRATION_FOLDER")
@@ -154,7 +155,7 @@ async def verify_substances(file: UploadFile = File(..., description="File CSV c
         total_predictions = {}
         for substance in verify_substances_models.keys():
             if verify_substances_models[substance]:
-                total_predictions[substance] = verify_substances_models.predict(X)
+                total_predictions[substance] = verify_substances_models[substance].predict(X)
             else:
                 total_predictions[substance] = [None] * len(X)
         
@@ -252,3 +253,9 @@ async def predict_substances_concentration(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi xử lý: {str(e)}")
 
+if __name__ == "__main__":
+    uvicorn.run(
+        "api:app",
+        host="0.0.0.0",
+        port=9000,
+    )

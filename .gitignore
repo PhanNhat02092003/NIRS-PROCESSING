@@ -1,5 +1,4 @@
 #Ignore the following files: *.txt, data, dataset, env, test folder
-*.txt
 *.pyc
 *.pdf
 *.pt
@@ -12,3 +11,5 @@ __pycache__/
 lightning_logs/
 data/
 history/
+checkpoint/
+classification_engine.py
