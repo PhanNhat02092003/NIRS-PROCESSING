@@ -7,12 +7,12 @@ def load_vegetable_classification_model(pretrained_folder):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = SMARTNIR(cfg=SmartNIRClassificationConfig(
         signal_len=2136,
-        out_ch_per_branch=128,
-        d_model=256,
-        depth=6,
-        n_heads=8,
+        out_ch_per_branch=64,
+        d_model=128,
+        depth=3,
+        n_heads=4,
         classifier="kan",
-        num_classes=9
+        num_classes=13
     )).to(device)
 
     model.load_state_dict(torch.load(os.path.join(pretrained_folder, "checkpoint.pth"), map_location=device))
