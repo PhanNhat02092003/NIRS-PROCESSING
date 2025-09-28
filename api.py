@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-vegetable_classification_model, vegetable_classification_mean, vegetable_classification_std, vegetable_classification_label_encoder = load_vegetable_classification_model(VEGETABLE_CLASSIFICATION_FOLDER)
+vegetable_classification_model, vegetable_classification_mean, vegetable_classification_std, idx2label = load_vegetable_classification_model(VEGETABLE_CLASSIFICATION_FOLDER)
 verify_substances_models = load_verify_substances_models(VERIFY_SUBSTANCES_FOLDER)
 predict_substances_concentration_models = load_predict_substances_concentration_models(PREDICT_SUBSTANCES_CONCENTRATION_FOLDER)
 
@@ -96,7 +96,7 @@ async def vegetable_classification(file: UploadFile = File(..., description="Fil
             logits = vegetable_classification_model(X_tensor)
             preds = torch.argmax(logits, dim=1).cpu().numpy()
 
-        labels = vegetable_classification_label_encoder.inverse_transform(preds)
+        labels = [idx2label[p] for p in preds]
         results = [
             {
                 "id": id,
