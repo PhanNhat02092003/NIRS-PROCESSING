@@ -3,6 +3,11 @@ import joblib
 from model.classification_model import *
 import numpy as np
 import json
+from pydantic import BaseModel
+from typing import List
+
+class NirsData(BaseModel):
+    spectrum: List[List[float]]
 
 def load_vegetable_classification_model(pretrained_folder):
     device = "cuda" if torch.cuda.is_available() else "cpu"
