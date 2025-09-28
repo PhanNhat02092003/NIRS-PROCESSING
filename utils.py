@@ -2,6 +2,7 @@ import os
 import joblib
 from model.classification_model import *
 import numpy as np
+import json
 
 def load_vegetable_classification_model(pretrained_folder):
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -11,8 +12,8 @@ def load_vegetable_classification_model(pretrained_folder):
         d_model=128,
         depth=3,
         n_heads=4,
-        classifier="kan",
-        num_classes=13
+        classifier="kan",   # đổi "mlp" nếu muốn MLP
+        num_classes=9
     )).to(device)
 
     model.load_state_dict(torch.load(os.path.join(pretrained_folder, "checkpoint.pth"), map_location=device))
@@ -22,9 +23,12 @@ def load_vegetable_classification_model(pretrained_folder):
     stats = np.load(os.path.join(pretrained_folder, "stats.npz"))
     mean, std = stats["mean"], stats["std"] 
 
-    label_encoder = joblib.load(os.path.join(pretrained_folder, "label_encoder.pkl"))
+    with open(os.path.join(pretrained_folder, "idx2label.json"), "r", encoding="utf-8") as f:
+        label2idx = json.load(f)
+
+    idx2label = {v: k for k, v in label2idx.items()}
     
-    return model, mean, std, label_encoder
+    return model, mean, std, idx2label
 
 def load_verify_substances_models(pretrained_folder):
     model_paths = {
