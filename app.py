@@ -200,7 +200,7 @@ async def predict_substances_concentration(request: NirsData) -> JSONResponse:
 
 if __name__ == "__main__":
     uvicorn.run(
-        "api:app",
+        "app:app",
         host="0.0.0.0",
         port=9000,
     )
