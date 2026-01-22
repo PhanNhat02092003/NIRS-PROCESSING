@@ -1,16 +1,10 @@
 #Ignore the following files: *.txt, data, dataset, env, test folder
 *.pyc
-*.pdf
 *.pt
 
 __pycache__/
 *.py[cod]
 
-*.ipynb
-
-lightning_logs/
 data/
-dataset/
 history/
 checkpoint/
-classification_engine.py
