@@ -6,12 +6,21 @@ import os
 from sklearn.preprocessing import LabelEncoder
 import joblib
 
+from dataset.preprocessing import preprocess_spectra
+
 class ClassificationNIRSDataset(Dataset):
     def __init__(self, data_filepath: str):
         super().__init__()
         df = pd.read_csv(data_filepath)
-        self.X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
-        self.y_raw = df['category'].values.ravel()
+        X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
+        y_raw = df['category'].values.ravel()
+
+        X_raw, keep_mask = preprocess_spectra(X_raw)
+        n_dropped = (~keep_mask).sum()
+        if n_dropped:
+            print(f"[ClassificationNIRSDataset] dropped {n_dropped} outlier spectra out of {len(keep_mask)}")
+        self.X_raw = X_raw
+        self.y_raw = y_raw[keep_mask]
 
         self.mean = None
         self.std = None

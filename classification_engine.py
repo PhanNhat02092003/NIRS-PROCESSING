@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
@@ -12,6 +13,30 @@ import json
 from model.classification_model import SMARTNIRClassifier, SmartNIRClassificationConfig
 from dataset.classification_dataset import ClassificationNIRSDataset
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class FocalLoss(nn.Module):
+    """Multiclass focal loss with optional per-class alpha weighting, so
+    well-classified (usually majority-class) examples contribute less to
+    the gradient and rare classes get relatively more weight.
+    """
+    def __init__(self, gamma: float = 2.0, alpha: torch.Tensor = None):
+        super().__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def forward(self, logits, targets):
+        log_probs = F.log_softmax(logits, dim=-1)
+        log_pt = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)
+        pt = log_pt.exp()
+        loss = -((1 - pt) ** self.gamma) * log_pt
+        if self.alpha is not None:
+            loss = loss * self.alpha[targets]
+        return loss.mean()
+
 
 def train(model, train_loader, val_loader, device, epochs, criterion, optimizer, scheduler=None, patience=10, save_history_path="history/smart_nir_classification.json", save_fig_path="history/plot.png", save_best_model_path="checkpoint/checkpoint.pth"):
     best_acc = 0.0
@@ -75,9 +100,9 @@ def train(model, train_loader, val_loader, device, epochs, criterion, optimizer,
         history["val_recall"].append(val_recall)
         history["val_f1"].append(val_f1)
 
-        # Scheduler (nếu có)
+        # Scheduler (nếu có) - warmup+cosine steps per-epoch, no metric needed
         if scheduler is not None:
-            scheduler.step(val_loss)
+            scheduler.step()
 
         # Cập nhật best model và kiểm tra early stopping
         if val_acc > best_acc:
@@ -166,10 +191,10 @@ if __name__ == "__main__":
     max_epochs = 200
     patience = 10
     k_folds = 5
-    machine = "FLAMENIR"
+    machine = f"{os.environ['MACHINE']}"
     task = "category_classification"
 
-    full_path = f"data/merge/{machine}/ALL.csv"
+    full_path = f"{os.environ['DATASET_ROOT']}/{machine}/ALL.csv"
     full_ds = ClassificationNIRSDataset(full_path)
 
     kf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=42)
@@ -200,10 +225,22 @@ if __name__ == "__main__":
 
         model = SMARTNIRClassifier(cfg).to(device)
 
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-3)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="min", factor=0.5, patience=5
+        # class-frequency alpha so Focal Loss weights rare categories more
+        class_counts = np.bincount(full_ds.y[train_idx], minlength=full_ds.n_classes)
+        alpha = (class_counts.sum() / (full_ds.n_classes * np.maximum(class_counts, 1)))
+        alpha = torch.tensor(alpha, dtype=torch.float32, device=device)
+        criterion = FocalLoss(gamma=2.0, alpha=alpha)
+
+        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        warmup_epochs = max(1, int(0.05 * max_epochs))
+        warmup_scheduler = optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=0.1, total_iters=warmup_epochs
+        )
+        cosine_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max_epochs - warmup_epochs
+        )
+        scheduler = optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs]
         )
 
         save_history_path = f"history/{task}/{machine}/smart_nir_classification_fold{fold + 1}.json"

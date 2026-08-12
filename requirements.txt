@@ -3,6 +3,7 @@ fastapi
 uvicorn
 pandas
 numpy
+scipy
 joblib
 python-multipart
 python-dotenv

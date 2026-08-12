@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import os
 
+from dataset.preprocessing import preprocess_spectra
+
 class RegressionNIRSDataset(Dataset):
     def __init__(self, data_filepath: str, target_column: str):
         super().__init__()
@@ -23,9 +25,16 @@ class RegressionNIRSDataset(Dataset):
             raise ValueError(f"Target column '{target_column}' has only one unique value different from -1 or none.")
         
         df = df[df[target_column] != -1]
-        
-        self.X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
-        self.y_raw = df[target_column].values.astype(np.float32)
+
+        X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
+        y_raw = df[target_column].values.astype(np.float32)
+
+        X_raw, keep_mask = preprocess_spectra(X_raw)
+        n_dropped = (~keep_mask).sum()
+        if n_dropped:
+            print(f"[RegressionNIRSDataset:{target_column}] dropped {n_dropped} outlier spectra out of {len(keep_mask)}")
+        self.X_raw = X_raw
+        self.y_raw = y_raw[keep_mask]
 
         self.mean_X = None
         self.std_X = None
@@ -41,16 +50,25 @@ class RegressionNIRSDataset(Dataset):
 
         self.X = (self.X_raw - self.mean_X) / self.std_X
 
-        y_train = self.y_raw[train_indices]
-        self.mean_y = y_train.mean()
-        self.std_y = y_train.std() + 1e-8
+        # concentrations are right-skewed (few large values dominate a plain
+        # MSE); log1p first so the network is fit in a roughly symmetric
+        # space, then z-score as before. Safe since -1 rows are filtered out
+        # in __init__, so y_raw is always > 0 here.
+        y_log = np.log1p(self.y_raw)
+        y_train_log = y_log[train_indices]
+        self.mean_y = y_train_log.mean()
+        self.std_y = y_train_log.std() + 1e-8
 
-        self.y = (self.y_raw - self.mean_y) / self.std_y
+        self.y = (y_log - self.mean_y) / self.std_y
 
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             stats_filepath = os.path.join(save_dir, "stats.npz")
             np.savez(stats_filepath, mean_X=self.mean_X, std_X=self.std_X, mean_y=self.mean_y, std_y=self.std_y)
+
+    def inverse_transform_y(self, y_normalized):
+        """Undo z-score + log1p to get back to original concentration units."""
+        return np.expm1(y_normalized * self.std_y + self.mean_y)
 
     def __len__(self):
         if self.y is None:

@@ -6,14 +6,36 @@ import torch.optim as optim
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from tqdm import tqdm
 from torch.utils.data import DataLoader, SubsetRandomSampler
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 import matplotlib.pyplot as plt
 import json
 import os
+from dotenv import load_dotenv
 from model.regression_model import SMARTNIRRegressor, SmartNIRRegressionConfig
 from dataset.regression_dataset import RegressionNIRSDataset
 
+load_dotenv()
+
+
+def make_folds(y_raw, k_folds, seed=42):
+    """Stratify folds on quantile bins of the target so each fold sees a
+    similar concentration distribution, instead of plain KFold which can
+    leave a fold skewed toward the low or high end of a right-skewed target.
+    Falls back to plain KFold if there isn't enough data per bin to stratify.
+    """
+    try:
+        bins = pd.qcut(y_raw, q=k_folds, labels=False, duplicates="drop")
+        if len(np.unique(bins)) < 2:
+            raise ValueError("not enough distinct quantile bins to stratify")
+        skf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=seed)
+        return list(skf.split(np.zeros(len(y_raw)), bins))
+    except ValueError:
+        kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
+        return list(kf.split(np.arange(len(y_raw))))
+
+
 def train(model, train_loader, val_loader, device, epochs, criterion, optimizer, scheduler=None, patience=10,
+          inverse_transform_y=None,
           save_history_path="history/smart_nir_regression.json", save_fig_path="history/plot.png",
           save_best_model_path="checkpoint/checkpoint.pth"):
     best_loss = float('inf')
@@ -62,9 +84,20 @@ def train(model, train_loader, val_loader, device, epochs, criterion, optimizer,
                 y_pred.extend(outputs.squeeze(-1).cpu().numpy())
 
         val_loss = val_running_loss / len(val_loader.dataset)
-        val_mae = mean_absolute_error(y_true, y_pred)
-        val_rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-        val_r2 = r2_score(y_true, y_pred)
+
+        # report MAE/RMSE/R2 in original concentration units, not the
+        # z-scored log space the model is actually trained/selected on
+        if inverse_transform_y is not None:
+            y_true_report = inverse_transform_y(np.array(y_true))
+            y_pred_report = inverse_transform_y(np.array(y_pred))
+        else:
+            y_true_report, y_pred_report = y_true, y_pred
+
+        # cast to plain float: sklearn returns numpy.float32 for float32
+        # input, which json.dump can't serialize (unlike numpy.float64)
+        val_mae = float(mean_absolute_error(y_true_report, y_pred_report))
+        val_rmse = float(np.sqrt(mean_squared_error(y_true_report, y_pred_report)))
+        val_r2 = float(r2_score(y_true_report, y_pred_report))
 
         # Lưu vào history
         history["train_loss"].append(train_loss)
@@ -155,10 +188,10 @@ if __name__ == "__main__":
     max_epochs = 500
     patience = 50
     k_folds = 5
-    machine = "OCEANFX"
+    machine = f"{os.environ['MACHINE']}"
     task = "substance_regression"
 
-    full_path = f"data/merge/{machine}/ALL.csv"
+    full_path = f"{os.environ['DATASET_ROOT']}/{machine}/ALL.csv"
     df = pd.read_csv(full_path)
 
     wavelength_cols = [col for col in df.columns if col.startswith('w_')]
@@ -202,7 +235,7 @@ if __name__ == "__main__":
             os.makedirs(save_best_model_dir, exist_ok=True)
             continue
 
-        kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+        folds = make_folds(full_ds.y_raw, k_folds)
 
         fold_histories = []
 
@@ -213,7 +246,7 @@ if __name__ == "__main__":
         os.makedirs(save_fig_dir, exist_ok=True)
         os.makedirs(save_best_model_dir, exist_ok=True)
 
-        for fold, (train_idx, val_idx) in enumerate(kf.split(np.arange(len(full_ds.y_raw)))):
+        for fold, (train_idx, val_idx) in enumerate(folds):
             print(f"Fold {fold + 1}/{k_folds} for {substance}")
 
             save_fold_dir = f"data/{task}/stage2/{machine}/{substance}/fold_{fold + 1}"
@@ -250,7 +283,7 @@ if __name__ == "__main__":
 
             model, history = train(
                 model, train_loader, val_loader, device, max_epochs, criterion, optimizer,
-                scheduler=scheduler, patience=patience,
+                scheduler=scheduler, patience=patience, inverse_transform_y=full_ds.inverse_transform_y,
                 save_history_path=save_history_path, save_fig_path=save_fig_path,
                 save_best_model_path=save_best_model_path
             )
