@@ -4,9 +4,9 @@ A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with Fas
 
 ## Features
 
-- **Vegetable Classification** — Classify vegetables into 9 categories (Tomato, Carrot, Cucumber, etc.)
-- **Substance Detection** — Detect the presence/absence of 9 chemical compounds
-- **Concentration Prediction** — Predict concentration levels of detected substances
+- **Vegetable Classification** — Classify vegetables into 9 categories
+- **Substance Detection** — Detect the presence/absence of 19 pesticide substances
+- **Concentration Prediction** — Predict concentration (mg/kg) of detected substances
 
 ## Project Structure
 
@@ -121,9 +121,66 @@ curl -X POST http://localhost:9000/nir-processing/substances-prediction \
   -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
 
-## API Documentation
+## API Reference
 
-Interactive docs are available at `http://localhost:9000/docs` (Swagger UI) when the server is running.
+Interactive docs (Swagger UI) are available at `http://localhost:9000/docs`
+when the server is running.
+
+### Request body (all endpoints)
+
+| Field | Type | Description |
+|---|---|---|
+| `spectrum` | `float[][]` | Batch of spectra. Each inner array's length must match the machine's wavelength count: **128** for `FLAMENIR`, **2136** for `OCEANFX`. |
+| `machine` | `"FLAMENIR" \| "OCEANFX"` | Which spectrometer the spectra came from -- selects which trained models to load. |
+
+Spectra are automatically preprocessed (Savitzky-Golay smoothing + SNV
+scatter correction, `dataset/preprocessing.py`) to match what the models
+were trained on -- send raw spectral intensities, not pre-processed ones.
+
+Each endpoint returns one result per input spectrum, in the same order. On
+failure (e.g. wrong spectrum length, or missing model files for a
+substance/machine) the endpoint returns HTTP 500 with `{"error": "<message>"}`.
+
+### `POST /nir-processing/category-classification`
+
+Returns the predicted vegetable category for each spectrum, voted across
+the 5 K-Fold models.
+
+```json
+{"results": ["Cải Thìa"]}
+```
+
+9 possible categories: `Khổ Qua`, `Mồng Tơi`, `Cải Thìa`, `Cà Chua`, `Cải Bẹ Xanh`,
+`Dưa Leo`, `Xà Lách`, `Đậu Cove`, `Cà Rốt`.
+
+### `POST /nir-processing/substances-detection`
+
+Returns the list of substances detected as present (majority vote across
+5 XGBoost fold models, decision threshold picked for target Recall $\geq 0.9$)
+for each spectrum.
+
+```json
+{"results": [["Thiamethoxam"]]}
+```
+
+### `POST /nir-processing/substances-prediction`
+
+Runs detection internally first, then predicts concentration (mg/kg, 5-fold
+average) only for the substances found present in each spectrum.
+
+```json
+{"results": [{"Thiamethoxam": 149.76327514648438}]}
+```
+
+19 substances tracked: `Thiamethoxam`, `Permethrin`, `Metalaxyl`,
+`Azoxystrobin`, `Imidaclopird`, `Difenoconazole`, `Cypermethrin`,
+`Cyhalothrin`, `Chlorantraniliprol`, `Chlopyrifos Methyl`,
+`Emamectin benzoate`, `Chlorothalonil`, `Triadimefon`, `Cyantraniliprole`,
+`Flutolanil`, `Indoxacarb`, `Abamectin`, `Propamocarb.HCL`, `Chlothianidin`.
+A substance is only ever returned by detection/prediction if it had enough
+positive samples on that machine to be trainable (see
+`checkpoint/substance_regression/stage1/<machine>/<substance>` --
+substances missing that folder are never trained and never predicted).
 
 ## Dependencies
 

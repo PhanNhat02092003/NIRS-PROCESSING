@@ -220,8 +220,11 @@ def infer_substances_prediction(spectra: np.ndarray, machine: str, detected_list
                 with torch.no_grad():
                     output = model(sample_tensor).squeeze(-1).cpu().numpy()[0]
 
-                # Denormalize
-                pred = output * std_y + mean_y
+                # Denormalize: undo z-score, then undo the log1p applied to
+                # the target before training (dataset/regression_dataset.py,
+                # RegressionNIRSDataset.inverse_transform_y) -- without
+                # expm1 this returns log1p(concentration), not concentration.
+                pred = np.expm1(output * std_y + mean_y)
                 all_preds.append(pred)
 
             if all_preds:

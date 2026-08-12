@@ -1,0 +1,13 @@
+.git/
+.claude/
+.env
+__pycache__/
+*.pyc
+*.pyo
+
+test/
+reports/
+
+README.md
+.gitignore
+.dockerignore
