@@ -3,6 +3,7 @@ import joblib
 
 from model.classification_model import *
 from model.regression_model import *
+from dataset.preprocessing import savgol_smooth, snv
 
 import numpy as np
 import xgboost as xgb
@@ -34,6 +35,11 @@ def infer_category_classification(spectra: np.ndarray, machine: str):
     # Check input shape
     if spectra.shape[1] != signal_len:
         raise ValueError(f"Input spectrum length {spectra.shape[1]} does not match expected {signal_len}")
+
+    # Match the Savitzky-Golay smoothing + SNV scatter correction applied to
+    # spectra before the training normalization stats were computed
+    # (dataset/preprocessing.py) -- skipping this causes train/serve skew.
+    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
 
     # Load means, stds, models, and label_encoders for all folds
     means = []
@@ -109,9 +115,13 @@ def infer_substances_detection(spectra: np.ndarray, machine: str):
     ]
     k_folds = 5
 
+    # Same preprocessing as training (dataset/preprocessing.py) to avoid
+    # train/serve skew.
+    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
+
     results = []
     for i in range(spectra.shape[0]):
-        sample = spectra[i:i+1] 
+        sample = spectra[i:i+1]
         detected = []
         for substance in substances:
             save_scaler_dir = f"data/{task}/stage1/{machine}/{substance}"
@@ -151,6 +161,10 @@ def infer_substances_prediction(spectra: np.ndarray, machine: str, detected_list
     task = "substance_regression"
     k_folds = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Same preprocessing as training (dataset/preprocessing.py) to avoid
+    # train/serve skew.
+    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
 
     results = []
     for i in range(spectra.shape[0]):
