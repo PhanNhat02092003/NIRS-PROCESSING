@@ -14,16 +14,25 @@ A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with Fas
 ├── app.py                  # FastAPI application & endpoints
 ├── utils.py                # Inference utilities & model loading
 ├── model/
-│   └── classification_model.py   # SMARTNIR neural network architecture
-├── pretrained/
-│   ├── vegetable_classification/  # SMARTNIR weights, labels, stats
-│   ├── verify_substances/         # XGBoost binary classifiers (.pkl)
-│   └── substances_concentration_prediction/  # XGBoost regressors (.pkl)
+│   ├── classification_model.py   # SMARTNIR neural network architecture
+│   └── regression_model.py
+├── dataset/
+│   └── preprocessing.py    # Savitzky-Golay + SNV preprocessing (must match training)
+├── checkpoint/
+│   ├── category_classification/{FLAMENIR,OCEANFX}/checkpoint_fold{1..5}.pth
+│   └── substance_regression/{stage1,stage2}/{FLAMENIR,OCEANFX}/{substance}/...
+├── data/
+│   ├── category_classification/{FLAMENIR,OCEANFX}/fold_{1..5}/{stats.npz,label_encoder.pkl}
+│   └── substance_regression/{stage1,stage2}/{FLAMENIR,OCEANFX}/{substance}/...
 ├── requirements.txt
 ├── Dockerfile
-├── server.sh
-└── API_DOCS.md             # Full API documentation
+└── server.sh
 ```
+
+Model paths in `utils.py` are hardcoded relative to the project root
+(`checkpoint/...`, `data/...`) -- there is no `.env` configuration for
+model locations; the `checkpoint/` and `data/` folders must simply be
+present (they are committed to this repo).
 
 ## Prerequisites
 
@@ -50,17 +59,7 @@ A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with Fas
    pip install -r requirements.txt
    ```
 
-2. **Configure environment variables:**
-
-   Create a `.env` file in the project root:
-
-   ```env
-   VEGETABLE_CLASSIFICATION_FOLDER=pretrained/vegetable_classification
-   VERIFY_SUBSTANCES_FOLDER=pretrained/verify_substances
-   PREDICT_SUBSTANCES_CONCENTRATION_FOLDER=pretrained/substances_concentration_prediction
-   ```
-
-3. **Start the server:**
+2. **Start the server:**
 
    ```bash
    python3 app.py
@@ -103,7 +102,7 @@ A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with Fas
 ```bash
 curl -X POST http://localhost:9000/nir-processing/category-classification \
   -H "Content-Type: application/json" \
-  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "machine-1"}'
+  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
 
 **Detect substances:**
@@ -111,7 +110,7 @@ curl -X POST http://localhost:9000/nir-processing/category-classification \
 ```bash
 curl -X POST http://localhost:9000/nir-processing/substances-detection \
   -H "Content-Type: application/json" \
-  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "machine-1"}'
+  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
 
 **Predict concentrations:**
@@ -119,14 +118,12 @@ curl -X POST http://localhost:9000/nir-processing/substances-detection \
 ```bash
 curl -X POST http://localhost:9000/nir-processing/substances-prediction \
   -H "Content-Type: application/json" \
-  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "machine-1"}'
+  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
 
 ## API Documentation
 
-See [API_DOCS.md](API_DOCS.md) for the full API reference including request/response schemas, supported labels, and processing pipeline details.
-
-Interactive docs are also available at `http://localhost:9000/docs` (Swagger UI) when the server is running.
+Interactive docs are available at `http://localhost:9000/docs` (Swagger UI) when the server is running.
 
 ## Dependencies
 
