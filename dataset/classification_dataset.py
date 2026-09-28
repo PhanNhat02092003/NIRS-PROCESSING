@@ -9,7 +9,7 @@ import joblib
 from dataset.preprocessing import preprocess_spectra
 
 class ClassificationNIRSDataset(Dataset):
-    def __init__(self, data_filepath: str):
+    def __init__(self, data_filepath: str, bin_factor: int = 1):
         super().__init__()
         df = pd.read_csv(data_filepath)
         X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
@@ -19,6 +19,13 @@ class ClassificationNIRSDataset(Dataset):
         n_dropped = (~keep_mask).sum()
         if n_dropped:
             print(f"[ClassificationNIRSDataset] dropped {n_dropped} outlier spectra out of {len(keep_mask)}")
+        if bin_factor > 1:
+            # Average-pool neighbouring wavelengths (high-resolution OCEANFX:
+            # attention over 2136 points costs ~110 s/epoch). Trim to a multiple
+            # of 8 after binning, a length the multi-kernel stem accepts.
+            n_out = (X_raw.shape[1] // bin_factor) // 8 * 8
+            X_raw = X_raw[:, :n_out * bin_factor].reshape(len(X_raw), n_out, bin_factor).mean(axis=2).astype(np.float32)
+            print(f"[ClassificationNIRSDataset] binned wavelengths by {bin_factor}: {n_out * bin_factor} -> {n_out} points")
         self.X_raw = X_raw
         self.y_raw = y_raw[keep_mask]
 
@@ -28,7 +35,7 @@ class ClassificationNIRSDataset(Dataset):
         self.X = None
         self.y = None
         self.n_classes = None
-        self.signal_length = len([wl for wl in df.columns if "w_" in wl])
+        self.signal_length = X_raw.shape[1]
 
     def fit_normalization_and_labels(self, train_indices, save_dir=None):
         X_train = self.X_raw[train_indices]

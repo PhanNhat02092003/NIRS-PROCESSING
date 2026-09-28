@@ -32,7 +32,7 @@
 \usepackage{fancyhdr}
 \usepackage[hidelinks]{hyperref}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc}
 
 % ---- paragraph and line spacing (template: before 3pt / after 3pt) ---
 \setlength{\parindent}{0.5cm}          % default tab stop 0.5 cm
@@ -117,17 +117,19 @@ Ngày \number\day\ tháng \number\month\ năm \number\year\par}
 
 \node[box, fill=gray!15] (input) {Phổ NIR đầu vào\\$\mathbf{x} \in \mathbb{R}^{D}$};
 
-\node[box, above right=9mm and 18mm of input] (clf) {SMART-NIR\\(Phân loại)};
+\node[box, above right=9mm and 18mm of input] (clf) {Mô-đun\\Phân loại\\(bài toán 1, Mục~\ref{sec:module-clf})};
 \node[aggbox, right=10mm of clf] (aggclf) {K-Fold ($K{=}5$)\\Bỏ phiếu};
 \node[outbox, right=10mm of aggclf] (catout) {Loại thực phẩm\\(9 lớp)};
 
-\node[box, below right=9mm and 18mm of input] (stage1) {XGBoost\\(Bước 1 -- Phát hiện)};
+\node[box, below right=9mm and 18mm of input] (stage1) {Mô-đun\\Phân loại\\(Bước 1, Mục~\ref{sec:module-clf})};
 \node[aggbox, right=10mm of stage1] (aggstage1) {K-Fold ($K{=}5$)\\Bỏ phiếu};
 \node[decision, right=10mm of aggstage1] (haspesticide) {Có\\thuốc trừ sâu?};
-\node[outbox, above right=5mm and 8mm of haspesticide] (negout) {Không phát hiện};
-\node[box, below right=5mm and 8mm of haspesticide] (stage2) {SMART-NIR\\(Bước 2 -- Định lượng)};
-\node[aggbox, right=10mm of stage2] (aggstage2) {K-Fold ($K{=}5$)\\Trung bình};
-\node[outbox, right=10mm of aggstage2] (regout) {Nồng độ thuốc trừ sâu\\(mg/kg)};
+\node[outbox, below right=5mm and 8mm of haspesticide] (negout) {An toàn};
+\node[box, above right=5mm and 8mm of haspesticide] (stage2) {Mô-đun\\Phân loại\\(Bước 2, Mục~\ref{sec:module-clf})};
+\node[aggbox, right=10mm of stage2] (aggstage2) {K-Fold ($K{=}5$)\\Bỏ phiếu};
+\node[outbox, right=10mm of aggstage2] (posout) {An toàn /\\Vượt ngưỡng (MRL)};
+
+\node[outbox, right=20mm of posout, fill=green!10, minimum width=42mm, minimum height=13mm] (finalout) {Loại thực phẩm\\+ An toàn tổng thể\\+ danh sách thuốc vi phạm (nếu có)};
 
 \draw[arrow] (input) -| (clf);
 \draw[arrow] (clf) -- (aggclf);
@@ -135,22 +137,34 @@ Ngày \number\day\ tháng \number\month\ năm \number\year\par}
 \draw[arrow] (input) -| (stage1);
 \draw[arrow] (stage1) -- (aggstage1);
 \draw[arrow] (aggstage1) -- (haspesticide);
-\draw[arrow] (haspesticide) -| node[above,pos=0.3,font=\scriptsize]{Không} (negout);
-\draw[arrow] (haspesticide) -| node[below,pos=0.3,font=\scriptsize]{Có} (stage2);
+\draw[arrow] (haspesticide) -| node[below,pos=0.3,font=\scriptsize]{Không} (negout);
+\draw[arrow] (haspesticide) -| node[above,pos=0.3,font=\scriptsize]{Có} (stage2);
 \draw[arrow] (stage2) -- (aggstage2);
-\draw[arrow] (aggstage2) -- (regout);
+\draw[arrow] (aggstage2) -- (posout);
+\draw[arrow] (posout) -- (finalout);
+\draw[arrow] (catout) -| (finalout);
+\draw[arrow] (negout) -| (finalout);
 
 \end{tikzpicture}%
 }
 \vspace{4pt}
-\captionof{figure}{Sơ đồ tổng quan hệ thống, giải quyết đồng thời ba bài
-toán: phân loại loại thực phẩm, phát hiện sự hiện diện và dự đoán nồng độ
-thuốc trừ sâu. Mỗi mô hình được huấn luyện theo kiểm định chéo K-Fold
-(K-Fold cross-validation, $K{=}5$); dự đoán cuối cùng của một mẫu tổng hợp
-từ 5 mô hình theo fold bằng bỏ phiếu đa số (majority voting) khi phân
-loại/phát hiện, hoặc trung bình cộng khi định lượng.
-Nhánh phát hiện/định lượng (Bước 1 -- Bước 2) được lặp lại độc lập cho từng
-loại trong 19 thuốc trừ sâu khảo sát.}
+\captionof{figure}{Sơ đồ tổng quan hệ thống, giải quyết đồng thời hai bài
+toán: phân loại loại thực phẩm, và đánh giá an toàn (An toàn / Vượt ngưỡng)
+đối với từng loại thuốc trừ sâu. Cả hai bài toán đều dùng chung Mô-đun Phân
+loại, một thành phần có thể thay thế bằng các kiến trúc độc lập -- XGBoost,
+LightGBM, SMART-NIR (cả hai bài toán) và GuidedDCNet (chỉ bài toán phân loại
+thực phẩm; Mục~\ref{sec:module-clf}). Bài toán (2) lặp
+lại độc lập cho từng loại trong 19 thuốc trừ sâu khảo sát theo cascade hai
+bước: Bước 1 phát hiện có/không, Bước 2 (chỉ chạy nếu Bước 1 xác định có)
+phân loại An toàn/Vượt ngưỡng theo MRL của đúng cặp (thực phẩm, thuốc trừ
+sâu); loại thực phẩm dự đoán được (hoặc nhãn thật khi huấn luyện) là một
+đầu vào bổ sung cho cả hai bước, vì MRL phụ thuộc vào loại thực phẩm
+(Mục~\ref{sec:data-thresholds}). Mỗi mô hình được huấn luyện theo kiểm định
+chéo K-Fold (K-Fold cross-validation, $K{=}5$); dự đoán cuối cùng của một
+mẫu tổng hợp từ 5 mô hình theo fold bằng bỏ phiếu đa số (majority voting).
+Kết xuất cuối cùng của hệ thống tổng hợp cả 20 mô hình (1 phân loại thực
+phẩm + 19$\times$2 an toàn thuốc trừ sâu) qua một phép hợp logic đơn giản,
+không cần huấn luyện thêm.}
 \label{fig:overview}
 \end{minipage}
 \end{lrbox}
@@ -161,49 +175,166 @@ loại trong 19 thuốc trừ sâu khảo sát.}
 \section{Phương pháp}
 
 \subsection{Tổng quan}
+\label{sec:overview}
 
-Hệ thống được xây dựng nhằm giải quyết đồng thời ba bài toán từ cùng một phổ
-NIR đầu vào của một mẫu rau củ quả: (1) phân loại loại thực phẩm; (2) phát
-hiện sự tồn tại của từng loại thuốc bảo vệ thực vật trong mẫu; và (3) dự đoán
-hàm lượng (nồng độ) của thuốc bảo vệ thực vật đó nếu được xác định là có tồn
-tại. Sơ đồ tổng quan của hệ thống được minh họa trong Hình~\ref{fig:overview}.
+Hệ thống được xây dựng nhằm giải quyết đồng thời hai bài toán phân loại từ
+cùng một phổ NIR đầu vào của một mẫu rau củ quả: (1) phân loại loại thực
+phẩm; và (2) đánh giá mức độ an toàn thực phẩm của mẫu đối với từng loại
+trong số 19 thuốc bảo vệ thực vật khảo sát, phân vào một trong hai mức --
+\emph{An toàn} (không phát hiện thuốc trừ sâu, hoặc có phát hiện nhưng nồng
+độ không vượt Ngưỡng dư lượng tối đa cho phép, Maximum Residue Limit -- MRL)
+và \emph{Vượt ngưỡng} (có phát hiện và nồng độ vượt MRL). Vì MRL phụ thuộc
+vào cả loại thực phẩm lẫn loại thuốc trừ sâu, ngưỡng dùng để gán nhãn cho
+bài toán (2) được tra theo đúng từng cặp (thực phẩm, thuốc trừ sâu) của
+mẫu, thay vì một ngưỡng cố định chung cho mọi thực phẩm
+(Mục~\ref{sec:data-thresholds}). Sơ đồ tổng quan của hệ thống được minh họa
+trong Hình~\ref{fig:overview}.
 
-Bài toán (1) được giải quyết độc lập bằng một mô hình SMART-NIR
-(Mục~\ref{sec:smartnir}) đóng vai trò bộ phân loại đa lớp, với số lớp đầu ra
-tương ứng số loại rau củ quả (9 lớp). Mô hình được huấn luyện theo kiểm định
-chéo K-Fold ($K=5$, Mục~\ref{sec:clf-training}), tạo ra 5 mô hình độc lập
-theo từng fold; ở bước suy luận, dự đoán cuối cùng cho một mẫu được tổng hợp
-từ 5 mô hình này bằng bỏ phiếu đa số (majority voting) thay vì chỉ dùng một
-mô hình đơn lẻ, giúp giảm phương sai và tăng độ ổn định của kết quả phân
-loại.
-
-Bài toán (2) và (3) được giải quyết theo một quy trình lai gồm hai bước, lặp
-lại độc lập cho từng loại trong số 19 thuốc trừ sâu khảo sát. Cả hai bước
-đều huấn luyện theo kiểm định chéo K-Fold ($K=5$, Mục~\ref{sec:stage-training})
-và tổng hợp dự đoán từ 5 mô hình theo fold ở bước suy luận:
+Bài toán (1) được giải quyết bằng \textbf{Mô-đun Phân loại}
+(Mục~\ref{sec:module-clf}) đóng vai trò bộ phân loại đa lớp, với số lớp đầu
+ra tương ứng số loại rau củ quả (9 lớp). Bài toán (2) được giải quyết theo
+một quy trình lai gồm hai bước nhị phân theo tầng (cascade), lặp lại độc lập
+cho từng loại trong số 19 thuốc trừ sâu khảo sát, và cũng tái sử dụng nguyên
+vẹn Mô-đun Phân loại cho cả hai bước:
 \begin{itemize}
 \setlength{\itemsep}{1pt}
-\item \textbf{Bước 1 -- Phát hiện.} Mô hình XGBoost (Mục~\ref{sec:xgboost})
-được sử dụng như một bài toán phân loại nhị phân, xác định thuốc trừ sâu đang xét
-có tồn tại trong mẫu hay không; giống bài toán (1), quyết định cuối cùng được
-tổng hợp bằng bỏ phiếu đa số (majority voting) qua 5 mô hình theo fold.
-\item \textbf{Bước 2 -- Định lượng.} Chỉ những mẫu được Bước 1 xác định là
-có tồn tại thuốc trừ sâu mới được đưa tiếp vào Bước 2, tại đó một mô hình
-SMART-NIR đóng vai trò bộ hồi quy, huấn luyện riêng cho từng thuốc trừ sâu, được
-dùng để dự đoán giá trị nồng độ; do đầu ra là giá trị liên tục, dự đoán cuối
-cùng là trung bình cộng của 5 dự đoán theo fold thay vì bỏ phiếu (voting).
+\item \textbf{Bước 1 -- Phát hiện.} Phân loại nhị phân xác định thuốc trừ
+sâu đang xét có tồn tại trong mẫu hay không. Huấn luyện trên toàn bộ mẫu.
+\item \textbf{Bước 2 -- Phân loại mức độ.} Phân loại nhị phân trực tiếp
+giữa \emph{An toàn} và \emph{Vượt ngưỡng} theo đúng MRL của cặp (thực phẩm,
+thuốc trừ sâu) của mẫu đó. Khác với một cascade thuần túy, Bước 2 huấn
+luyện trên \emph{toàn bộ} mẫu chứ không chỉ tập con Bước 1 xác định là có
+phát hiện: mẫu không phát hiện được gán thẳng nhãn An toàn (giống mẫu có
+phát hiện nhưng dưới MRL), giúp Bước 2 mạnh và ổn định ngay cả khi được hỏi
+độc lập. Ở suy luận, Bước 2 chỉ thực sự được gọi đến khi Bước 1 xác định có
+phát hiện, đúng theo cascade Bước 1 -- Bước 2 (Mục~\ref{sec:stage-training}).
 \end{itemize}
+Chỉ có hai nhãn an toàn cuối cùng -- \emph{An toàn} và \emph{Vượt ngưỡng} --
+không có mức trung gian riêng: một mẫu không được Bước 1 phát hiện, hoặc
+được Bước 1 phát hiện nhưng Bước 2 xác định dưới MRL, đều được xem là
+\emph{An toàn}.
 
-Cách tiếp cận theo tầng (cascade) này mang lại ba lợi ích: (i) tránh lãng phí
-năng lực của mô hình hồi quy vào các mẫu không chứa thuốc trừ sâu, vốn chiếm đa số
-trong tập dữ liệu; (ii) phản ánh đúng quy trình phân tích thực tế, trong đó
-bước sàng lọc sự hiện diện luôn được thực hiện trước bước định lượng; và (iii)
-cho phép đánh giá độc lập độ chính xác của từng giai đoạn -- phát hiện và
-định lượng -- thay vì gộp chung thành một chỉ số duy nhất.
+Cả 20 mô hình (1 cho bài toán (1), 19$\times$2 cho bài toán (2)) đều huấn
+luyện theo kiểm định chéo K-Fold ($K=5$, Mục~\ref{sec:clf-training} và
+Mục~\ref{sec:stage-training}), tạo ra 5 mô hình độc lập theo từng fold; ở
+bước suy luận, dự đoán cuối cùng cho một mẫu được tổng hợp từ 5 mô hình này
+bằng bỏ phiếu đa số (majority voting) thay vì chỉ dùng một mô hình đơn lẻ,
+giúp giảm phương sai và tăng độ ổn định của kết quả. Vì cả hai bài toán đều
+là bài toán phân loại thuần túy, chúng được đánh giá trên các phương pháp
+cơ sở độc lập -- XGBoost, LightGBM, SMART-NIR (cả hai bài toán) và GuidedDCNet
+(chỉ bài toán phân loại thực phẩm) -- trình bày chi tiết ở
+Mục~\ref{sec:xgboost}, \ref{sec:lightgbm} (XGBoost, LightGBM) và
+Mục~\ref{sec:module-clf} (SMART-NIR, GuidedDCNet). Vì loại thực
+phẩm ảnh hưởng trực
+tiếp tới ngưỡng MRL dùng để gán nhãn ở Bước 1 và Bước 2, thông tin này được
+đưa thêm vào làm đặc trưng đầu vào tường minh (one-hot theo 9 loại thực
+phẩm, nối vào đặc trưng phổ trước khi vào mô hình) cho cả ba kiến trúc ở
+hai bước này, thay vì buộc mô hình phải tự suy luận loại thực phẩm chỉ từ
+hình dạng phổ.
 
-\subsection{Mô hình SMART-NIR}
+Cách tiếp cận theo tầng (cascade) cho bài toán (2) mang lại hai lợi ích: (i)
+phản ánh đúng quy trình phân tích thực tế, trong đó bước sàng lọc sự hiện
+diện luôn được thực hiện trước bước đánh giá mức độ; và (ii) cho phép đánh
+giá độc lập độ chính xác của từng giai đoạn -- phát hiện và phân loại mức
+độ -- thay vì gộp chung thành một chỉ số duy nhất. Vì Bước 2 huấn luyện
+trên toàn bộ mẫu (không chỉ tập con Bước 1 xác định có phát hiện), cascade ở
+đây chủ yếu thể hiện ở suy luận (Bước 2 chỉ thực sự được hỏi khi Bước 1 báo
+có), không phải ở việc chia tách tập huấn luyện.
+
+\textbf{Kết xuất cuối cùng của hệ thống} cho một mẫu gồm ba thành phần, tổng
+hợp từ 20 mô hình trên: (i) loại thực phẩm (đầu ra bài toán (1)); (ii) trạng
+thái an toàn tổng thể -- \emph{An toàn} nếu cả 19 cặp Bước 1--Bước 2 của bài
+toán (2) đều kết luận An toàn, ngược lại \emph{Không an toàn} nếu có ít nhất
+một thuốc trừ sâu bị kết luận Vượt ngưỡng; và (iii) khi không an toàn, danh
+sách cụ thể các thuốc trừ sâu bị kết luận Vượt ngưỡng (không chỉ một cờ nhị
+phân duy nhất). Vì 19 cặp mô hình của bài toán (2) độc lập với nhau và mỗi
+cặp tự quyết định đúng một thuốc trừ sâu, bước tổng hợp này không cần huấn
+luyện thêm: chỉ là phép hợp logic (logical OR) và liệt kê nhãn dương trên 19
+kết luận cuối cùng (sau cascade Bước 1--Bước 2) của từng thuốc.
+
+\subsection{Mô-đun Phân loại}
+\label{sec:module-clf}
+
+Bốn kiến trúc độc lập được cài đặt và đánh giá cho Mô-đun Phân loại, dùng
+chung cho cả bài toán (1) và bài toán (2): hai mô hình cây tăng cường theo
+gradient (Gradient Boosted Trees) đại diện cho hướng tiếp cận học máy cổ
+điển, XGBoost (Mục~\ref{sec:xgboost}) và LightGBM (Mục~\ref{sec:lightgbm});
+và hai kiến trúc mạng nơ-ron sâu, SMART-NIR (Mục~\ref{sec:smartnir}) --
+kiến trúc chính của hệ thống -- và GuidedDCNet (Mục~\ref{sec:guideddcnet}),
+một kiến trúc đối chứng dựa trên mô hình khuếch tán (diffusion model) có
+hướng dẫn. Số lớp đầu ra thay đổi theo từng bài toán (9 lớp cho phân loại
+thực phẩm, nhị phân cho từng thuốc trừ sâu ở bài toán (2)), nhưng kiến trúc
+của mỗi phương pháp giữ nguyên.
+
+\subsection{Mô hình XGBoost}
+\label{sec:xgboost}
+
+XGBoost (Extreme Gradient Boosting) là thuật toán học tập hợp (ensemble
+learning) thuộc họ Gradient Boosting Decision Trees (GBDT), được phát triển
+để khắc phục các
+hạn chế của Gradient Boosting truyền thống về hiệu năng, khả năng mở rộng và
+độ ổn định trên dữ liệu lớn, phức tạp -- nhờ đó trở thành một trong những
+phương pháp phổ biến nhất cho bài toán phân loại và hồi quy.
+
+Cốt lõi của XGBoost là ý tưởng tăng cường tuần tự (boosting): một tập hợp
+cây quyết định (weak learners) được huấn luyện tuần tự, mỗi cây mới học để
+bù đắp sai lệch mà các
+cây trước đó chưa dự đoán tốt, thay vì huấn luyện độc lập như bagging. Gọi
+$y_i$ và $\hat{y}_i$ lần lượt là nhãn thực và giá trị dự đoán của mẫu $i$,
+hàm mục tiêu được tối ưu ở mỗi vòng lặp có dạng
+\begin{equation}
+L = \sum_i l\big(y_i, \hat{y}_i\big) + \sum_k \Omega(f_k),
+\label{eq:xgb}
+\end{equation}
+trong đó $l(\cdot)$ là hàm mất mát đo độ sai lệch giữa $y_i$ và $\hat{y}_i$,
+còn $\Omega(f_k)$ là số hạng điều chuẩn áp dụng cho cây thứ $k$ (ký hiệu
+$f_k$), giúp kiểm soát độ phức tạp của cây và giảm nguy cơ quá khớp.
+
+Khác với Gradient Boosting truyền thống chỉ dùng gradient bậc nhất, XGBoost
+tận dụng khai triển Taylor bậc hai của hàm mất mát -- kết hợp cả gradient
+(đạo hàm bậc 1) và Hessian (đạo hàm bậc 2) -- giúp ước lượng chính xác hơn
+mức cải thiện khi thêm một cây mới, nhờ đó quá trình tối ưu hội tụ nhanh và
+ổn định hơn. Mỗi cây được xây dựng theo hướng tham lam, với tiêu chí chia
+nhánh dựa trên mức độ giảm của hàm mục tiêu, hỗ trợ cả chiến lược mở rộng
+theo chiều sâu (depth-wise) lẫn mở rộng theo nút mang lại lợi ích lớn nhất
+(leaf-wise), kèm cơ chế cắt tỉa dựa trên độ lợi (gain) để loại sớm các nhánh
+không mang lại cải thiện đáng kể.
+
+Nhờ sự cân bằng giữa độ chính xác, khả năng diễn giải và hiệu năng tính
+toán, XGBoost được ứng dụng rộng rãi và đóng vai trò quan trọng trong hệ
+sinh thái học máy hiện đại.
+
+%=====================================================================
+\subsection{Mô hình LightGBM}
+\label{sec:lightgbm}
+
+LightGBM (Light Gradient Boosting Machine) là một thuật toán Gradient
+Boosted Trees khác, cùng họ với XGBoost (Mục~\ref{sec:xgboost}) nhưng khác
+biệt chủ yếu ở chiến lược phát triển cây và cách xử lý dữ liệu lớn, được
+đưa vào làm phương pháp cơ sở thứ hai để đối chứng độc lập với XGBoost trong
+cùng họ mô hình cây tăng cường.
+
+Khác biệt đầu tiên nằm ở chiến lược phát triển cây: thay vì mở rộng theo
+chiều sâu (depth-wise, XGBoost mặc định), LightGBM mở rộng theo nút mang lại
+lợi ích lớn nhất trước (leaf-wise), chọn nút lá có mức giảm hàm mất mát lớn
+nhất để tách tiếp ở mỗi bước, thường hội tụ nhanh hơn và đạt độ chính xác cao
+hơn với cùng số nút lá, đổi lại dễ quá khớp hơn trên tập dữ liệu nhỏ nếu
+không giới hạn độ sâu tối đa.
+
+Thứ hai, LightGBM dùng Gradient-based One-Side Sampling (GOSS) để giảm số
+mẫu cần quét ở mỗi vòng lặp: các mẫu có gradient lớn (mô hình hiện tại còn dự
+đoán sai nhiều) được giữ lại toàn bộ, trong khi chỉ một tỉ lệ nhỏ mẫu có
+gradient nhỏ được lấy mẫu ngẫu nhiên (kèm hệ số trọng số bù trừ để giữ ước
+lượng gradient không thiên lệch), giúp giảm đáng kể thời gian huấn luyện mà
+ít ảnh hưởng độ chính xác. Thứ ba, Exclusive Feature Bundling (EFB) gộp các
+đặc trưng thưa và loại trừ lẫn nhau (hiếm khi cùng khác không) thành một
+đặc trưng gộp duy nhất, giảm số chiều thực tế cần xử lý khi xây cây --
+đặc biệt phù hợp với đặc trưng one-hot loại thực phẩm (Mục~\ref{sec:overview})
+được nối thêm vào vector phổ cho Bước 1 và Bước 2, vốn thưa và loại trừ lẫn
+nhau theo đúng định nghĩa của one-hot encoding.
+
 \label{sec:smartnir}
-
+\textbf{Kiến trúc SMART-NIR.}
 Kiến trúc Vision Transformer (ViT) nắm bắt tốt đặc trưng toàn cục và dễ mở
 rộng, nhưng các mô hình ViT truyền thống thường dùng phép chiếu tích chập
 $3 \times 3$ ở bước nhúng đặc trưng, dễ làm mất các đặc tính tín hiệu quan
@@ -213,7 +344,7 @@ trong Hình~\ref{fig:smartnir}: (1) Khối Multi-kernel trích xuất đặc tr�
 từ phổ NIR ở nhiều tỉ lệ khác nhau; (2) Patch + Position Embedding mã hóa và
 định vị các đặc trưng thô thành chuỗi token; (3) Khối mã hóa Transformer tinh
 chỉnh chuỗi token thành đặc trưng giàu thông tin; (4) KAN đóng vai trò bộ
-phân loại hoặc hồi quy ở đầu ra, tùy theo tác vụ đích.
+phân loại ở đầu ra, với số lớp thay đổi theo từng bài toán con đích.
 
 \begin{figure}[htbp]
 \centering
@@ -301,9 +432,9 @@ Hình~\ref{fig:smartnir}. Việc xử lý song song hai nửa đặc trưng theo
 này giúp mô hình học được các mẫu đặc trưng đa dạng hơn mà không làm phát
 sinh chi phí tính toán đáng kể.
 
-\subsubsection{Bộ phân loại / hồi quy}
+\subsubsection{Bộ phân loại}
 
-Ở đầu ra, kiến trúc KAN đóng vai trò bộ phân loại hoặc hồi quy, với hai lớp
+Ở đầu ra, kiến trúc KAN đóng vai trò bộ phân loại, với hai lớp
 ẩn kích thước giảm dần (32, 16), như minh họa ở Hình~\ref{fig:kan}. Khác với
 MLP truyền thống dùng trọng số tuyến tính cho mỗi kết nối, KAN thay thế các
 ma trận trọng số bằng các hàm một biến có thể học được, áp dụng độc lập theo
@@ -316,45 +447,65 @@ từng chiều của đầu vào.
 \label{fig:kan}
 \end{figure}
 
-\subsection{Mô hình XGBoost}
-\label{sec:xgboost}
+\label{sec:guideddcnet}
+\textbf{Kiến trúc GuidedDCNet.}
+Khác với SMART-NIR (một mạng phân loại truyền thống, ánh xạ trực tiếp phổ
+NIR sang nhãn), GuidedDCNet tiếp cận bài toán phân loại theo hướng mô hình
+sinh: nhãn $y^{(0)}$ được xem như biến cần khôi phục từ nhiễu Gauss thông
+qua một quá trình khuếch tán có điều kiện (conditional diffusion), tương tự
+Denoising Diffusion Probabilistic Models (DDPM). Kiến trúc gồm ba thành
+phần chính: (1) một bộ mã hóa dữ liệu trích xuất embedding $\pi(x)$ từ phổ
+đầu vào; (2) Cơ chế Hướng dẫn Điều kiện Đa tỉ lệ (Multi-scale Conditional
+Guidance Mechanism -- MCGM), sinh đồng thời một vector hướng dẫn toàn cục
+$\hat{y}_g$ (trung bình bản đồ kích hoạt từ một nhánh mã hóa toàn cục) và
+một vector hướng dẫn cục bộ $\hat{y}_l$ (từ một tập con các vị trí bước
+sóng quan trọng nhất, được tổng hợp bằng gated-attention pooling); và (3)
+một mạng khử nhiễu Conditional UNet, ước lượng nhiễu đã thêm vào $y^{(0)}$
+tại mỗi bước thời gian, có điều kiện theo cả $\pi(x)$ lẫn hai vector hướng
+dẫn.
 
-XGBoost (Extreme Gradient Boosting) là thuật toán học tập hợp (ensemble
-learning) thuộc họ Gradient Boosting Decision Trees (GBDT), được phát triển
-để khắc phục các
-hạn chế của Gradient Boosting truyền thống về hiệu năng, khả năng mở rộng và
-độ ổn định trên dữ liệu lớn, phức tạp -- nhờ đó trở thành một trong những
-phương pháp phổ biến nhất cho bài toán phân loại và hồi quy.
+\begin{figure*}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figs/GuidedDCNet_Architecture.png}
+\caption{Kiến trúc tổng quan mô hình GuidedDCNet}
+\label{fig:guideddcnet}
+\end{figure*}
 
-Cốt lõi của XGBoost là ý tưởng tăng cường tuần tự (boosting): một tập hợp
-cây quyết định (weak learners) được huấn luyện tuần tự, mỗi cây mới học để
-bù đắp sai lệch mà các
-cây trước đó chưa dự đoán tốt, thay vì huấn luyện độc lập như bagging. Gọi
-$y_i$ và $\hat{y}_i$ lần lượt là nhãn thực và giá trị dự đoán của mẫu $i$,
-hàm mục tiêu được tối ưu ở mỗi vòng lặp có dạng
+Ở pha khuếch tán thuận, nhãn gốc được nhiễu hóa dần theo lịch trình tuyến
+tính $\{\beta_t\}_{t=1}^{T}$, kết hợp với hai vector hướng dẫn:
 \begin{equation}
-L = \sum_i l\big(y_i, \hat{y}_i\big) + \sum_k \Omega(f_k),
-\label{eq:xgb}
+y^{(t)} = \sqrt{\bar{\alpha}_t}\, y^{(0)} + \sqrt{1-\bar{\alpha}_t}\, \epsilon
++ \big(1-\sqrt{\bar{\alpha}_t}\big)(\hat{y}_g + \hat{y}_l),
+\label{eq:gdcnet-forward}
 \end{equation}
-trong đó $l(\cdot)$ là hàm mất mát đo độ sai lệch giữa $y_i$ và $\hat{y}_i$,
-còn $\Omega(f_k)$ là số hạng điều chuẩn áp dụng cho cây thứ $k$ (ký hiệu
-$f_k$), giúp kiểm soát độ phức tạp của cây và giảm nguy cơ quá khớp.
+với $\epsilon \sim \mathcal{N}(0,I)$, $\alpha_t = 1-\beta_t$ và
+$\bar{\alpha}_t = \prod_{\tau \le t}\alpha_\tau$. Mạng UNet có điều kiện
+$g_\theta$ được huấn luyện để ước lượng lại $\epsilon$ từ $y^{(t)}$, $\pi(x)$
+và hai vector hướng dẫn, tối thiểu hóa đồng thời hàm mất mát ước lượng nhiễu
+(MSE) và hai số hạng điều chuẩn Maximum Mean Discrepancy (MMD) áp dụng riêng
+cho từng nhánh hướng dẫn:
+\begin{equation}
+\mathcal{L}_{total} = \big\|\epsilon - g_\theta(\pi(x), y^{(t)}, \hat{y}_g, \hat{y}_l, t)\big\|^2
++ \lambda\big(\mathcal{L}^{MMD}_g + \mathcal{L}^{MMD}_l\big).
+\label{eq:gdcnet-loss}
+\end{equation}
+Ở bước suy luận, nhãn dự đoán $\hat{y}^{(0)}$ được khôi phục bằng một quá
+trình khuếch tán ngược đầy đủ $T$ bước, xuất phát từ
+$y^{(T)} \sim \mathcal{N}\!\big((\hat{y}_g+\hat{y}_l)/2,\, I\big)$.
 
-Khác với Gradient Boosting truyền thống chỉ dùng gradient bậc nhất, XGBoost
-tận dụng khai triển Taylor bậc hai của hàm mất mát -- kết hợp cả gradient
-(đạo hàm bậc 1) và Hessian (đạo hàm bậc 2) -- giúp ước lượng chính xác hơn
-mức cải thiện khi thêm một cây mới, nhờ đó quá trình tối ưu hội tụ nhanh và
-ổn định hơn. Mỗi cây được xây dựng theo hướng tham lam, với tiêu chí chia
-nhánh dựa trên mức độ giảm của hàm mục tiêu, hỗ trợ cả chiến lược mở rộng
-theo chiều sâu (depth-wise) lẫn mở rộng theo nút mang lại lợi ích lớn nhất
-(leaf-wise), kèm cơ chế cắt tỉa dựa trên độ lợi (gain) để loại sớm các nhánh
-không mang lại cải thiện đáng kể.
+Nhánh cục bộ của MCGM xác định các vị trí bước sóng quan trọng nhất bằng độ
+nhạy gradient ($|\partial(\text{logits})/\partial x|$, giữ lại 30\% vị trí
+có độ nhạy cao nhất) -- một xấp xỉ nhanh cho vai trò diễn giải, phù hợp khi
+cần huấn luyện lặp lại qua 5 fold $\times$ 2 máy quang phổ. Huấn luyện được
+tổ chức thành hai giai đoạn tuần tự: giai đoạn huấn luyện trước
+(pretraining) bằng hàm mất mát Cross-Entropy trên tổng hai vector hướng
+dẫn, khôi phục trọng số tại epoch có độ chính xác kiểm định tốt nhất trước
+khi bước vào giai đoạn khuếch tán đầy đủ, đảm bảo giai đoạn hai luôn khởi
+đầu từ trạng thái biểu diễn tốt nhất thay vì trạng thái ở epoch huấn luyện
+cuối cùng. Số bước khuếch tán được đặt $T=100$, phù hợp với không gian nhãn
+chỉ 9 chiều (số lớp rau củ quả), không cần lịch trình nhiễu dài như dữ liệu
+ảnh có độ phân giải cao.
 
-Nhờ sự cân bằng giữa độ chính xác, khả năng diễn giải và hiệu năng tính
-toán, XGBoost được ứng dụng rộng rãi và đóng vai trò quan trọng trong hệ
-sinh thái học máy hiện đại.
-
-%=====================================================================
 \section{Dữ liệu}
 
 Bộ dữ liệu gồm phổ NIR thu từ hai máy quang phổ FLAMENIR và OCEANFX trên
@@ -364,6 +515,24 @@ phương pháp phân tích hóa học chuyên sâu trong phòng thí nghiệm. P
 trình bày thống kê mô tả (EDA) trên từng máy: phân bố mẫu theo loại rau củ
 quả, tỉ lệ nhiễm từng loại thuốc trừ sâu, đặc điểm phổ NIR theo từng loại, và
 phân bố nồng độ trong các mẫu có phát hiện.
+
+\subsubsection{Ngưỡng MRL theo thực phẩm và thuốc trừ sâu}
+\label{sec:data-thresholds}
+
+Ngưỡng dư lượng tối đa cho phép (Maximum Residue Limit -- MRL) dùng để gán
+nhãn cho bài toán (2) (Mục~\ref{sec:overview}) được tra theo một bảng ngưỡng
+hai chiều: mỗi cặp (loại thực phẩm, thuốc trừ sâu) trong số 9 loại thực
+phẩm và 19 thuốc trừ sâu khảo sát ứng với một giá trị MRL (mg/kg) riêng.
+Nhãn của bài toán (2) với một mẫu có nồng độ thực đo $v$, thuộc thực phẩm
+$f$ và đang xét thuốc trừ sâu $p$, được xác định:
+\begin{equation}
+\text{nhãn}(v, f, p) =
+\begin{cases}
+\text{Vượt ngưỡng} & v \ne -1, v > \mathrm{MRL}(f,p) \\
+\text{An toàn} & \text{ngược lại}
+\end{cases}
+\label{eq:safety-label}
+\end{equation}
 
 \subsection{Thống kê mô tả}
 \label{sec:overview-stats}
@@ -377,7 +546,7 @@ phân bố nồng độ trong các mẫu có phát hiện.
 \hline
 \textbf{Thông số} & \textbf{FLAMENIR} & \textbf{OCEANFX} \\
 \hline
-Số lượng mẫu & 173.252 & 126.147\textsuperscript{*} \\
+Số lượng mẫu & 335.805 & 380.029\textsuperscript{*} \\
 Số lượng bước sóng & 128 & 2.136 \\
 Số lượng lớp phân loại & 9 & 9 \\
 Số thuốc trừ sâu cần dự đoán & 19 & 19 \\
@@ -385,15 +554,20 @@ Số thuốc trừ sâu cần dự đoán & 19 & 19 \\
 \end{tabular}
 
 \vspace{2pt}
-{\footnotesize \textsuperscript{*}đã loại 1 mẫu ngoại lai do lỗi cảm biến.}
+{\footnotesize \textsuperscript{*}đã loại 1 mẫu ngoại lai do lỗi cảm biến
+(quy trình lọc ngoại lai, Mục~\ref{sec:stage2-preprocess}). Số mẫu đã loại
+các nhóm mẫu trùng phổ (cùng lần quét bị ghi nhận nhiều lần) mang nhãn mâu
+thuẫn hoặc khác loại thực phẩm, chỉ giữ một bản với nhóm trùng phổ đồng
+thuận nhãn, và chưa tính 100 mẫu mỗi máy được tách riêng làm tập kiểm tra
+độc lập cuối cùng.}
 \end{table}
 
-Bảng~\ref{tab:overview-stats} cho thấy sự đánh đổi giữa hai máy: FLAMENIR
-thu được nhiều mẫu hơn (173.252 so với 126.147) nhưng với độ phân giải phổ
-thấp hơn nhiều (128 so với 2.136 điểm bước sóng) so với OCEANFX. Cả hai máy
-đều khảo sát cùng 9 loại rau củ quả và 19 thuốc trừ sâu, cho phép so sánh
-trực tiếp hiệu năng mô hình giữa hai cấu hình phần cứng khác nhau ở
-Mục~\ref{sec:results}.
+Bảng~\ref{tab:overview-stats} cho thấy sự đánh đổi giữa hai máy: OCEANFX có
+nhiều mẫu hơn FLAMENIR (380.029 so với 335.805) nhưng FLAMENIR có độ phân
+giải phổ thấp hơn nhiều (128 so với 2.136 điểm bước sóng) so với OCEANFX. Cả
+hai máy đều khảo sát cùng 9 loại rau củ
+quả và 19 thuốc trừ sâu, cho phép so sánh trực tiếp hiệu năng mô hình giữa
+hai cấu hình phần cứng khác nhau ở Mục~\ref{sec:results}.
 
 \begin{table}[htbp]
 \centering
@@ -406,28 +580,28 @@ Mục~\ref{sec:results}.
 \cline{2-3}
  & \textbf{FLAMENIR} & \textbf{OCEANFX} \\
 \hline
-Khổ Qua      & 21.833 & 17.683 \\
-Mồng Tơi     & 15.636 & 12.187 \\
-Cải Thìa     & 21.269 & 16.905 \\
-Cà Chua      & 16.672 & 12.289 \\
-Cải Bẹ Xanh  & 15.691 & 15.916 \\
-Dưa Leo      & 23.069 & 15.566 \\
-Xà Lách      & 15.597 & 7.868 \\
-Đậu Cove     & 20.334 & 16.256 \\
-Cà Rốt       & 23.151 & 11.477 \\
+Khổ Qua      & 41.652 & 45.883 \\
+Mồng Tơi     & 32.698 & 38.114 \\
+Cải Thìa     & 39.114 & 43.829 \\
+Cà Chua      & 38.059 & 45.828 \\
+Cải Bẹ Xanh  & 31.066 & 43.413 \\
+Dưa Leo      & 41.180 & 44.789 \\
+Xà Lách      & 32.713 & 35.598 \\
+Đậu Cove     & 38.869 & 42.116 \\
+Cà Rốt       & 40.454 & 40.459 \\
 \hline
 \end{tabular}
 \end{table}
 
 Bảng~\ref{tab:cat-counts} cho thấy phân bố mẫu giữa các loại rau củ quả
-không hoàn toàn cân bằng. Trên FLAMENIR, chênh lệch giữa loại nhiều mẫu nhất
-(Cà Rốt, 23.151) và ít mẫu nhất (Xà Lách, 15.597) khoảng 1,5 lần; trên
-OCEANFX, mức chênh lệch rõ rệt hơn, khoảng 2,2 lần giữa Khổ Qua (17.683) và
-Xà Lách (7.868) -- Xà Lách là loại thiểu số trên cả hai máy. Mất cân bằng
-này là một trong các lý do bài toán phân loại (Mục~\ref{sec:smartnir}) dùng
-kiểm định chéo K-Fold phân tầng (Stratified K-Fold) và theo dõi cả
-Precision/Recall/F1-score theo trung bình không trọng số qua các lớp
-(macro-average) thay vì chỉ Accuracy.
+không hoàn toàn cân bằng, dù mức mất cân bằng ở mức tương đối nhẹ. Trên
+FLAMENIR, chênh lệch giữa loại nhiều mẫu nhất (Khổ Qua, 41.652) và ít mẫu
+nhất (Cải Bẹ Xanh, 31.066) khoảng 1,34 lần; trên OCEANFX, mức chênh lệch
+tương tự, khoảng 1,29 lần giữa Khổ Qua (45.883) và Xà Lách (35.598). Mất
+cân bằng này là một trong các lý do bài toán phân loại
+(Mục~\ref{sec:smartnir}) dùng kiểm định chéo K-Fold phân tầng (Stratified
+K-Fold) và theo dõi cả Precision/Recall/F1-score theo trung bình không
+trọng số qua các lớp (macro-average) thay vì chỉ Accuracy.
 
 \begin{table}[htbp]
 \centering
@@ -442,45 +616,123 @@ Precision/Recall/F1-score theo trung bình không trọng số qua các lớp
 \cline{2-5}
  & \textbf{Không chứa} & \textbf{Có chứa} & \textbf{Không chứa} & \textbf{Có chứa} \\
 \hline
-Thiamethoxam        & 159.315 & 13.937 & 114.054 & 12.093 \\
-Permethrin          & 148.443 & 24.809 & 100.283 & 25.864 \\
-Metalaxyl           & 169.091 & 4.161  & 121.745 & 4.402 \\
-Azoxystrobin        & 160.518 & 12.734 & 115.526 & 10.621 \\
-Imidaclopird        & 154.619 & 18.633 & 121.747 & 4.400 \\
-Difenoconazole      & 160.624 & 12.628 & 115.807 & 10.340 \\
-Cypermethrin        & 160.330 & 12.922 & 113.326 & 12.821 \\
-Cyhalothrin         & 169.934 & 3.318  & 120.598 & 5.549 \\
-Chlorantraniliprol  & 171.622 & 1.630  & 123.260 & 2.887 \\
-Chlopyrifos Methyl  & 171.371 & 1.881  & 122.342 & 3.805 \\
-Emamectin benzoate  & 160.062 & 13.190 & 125.115 & 1.032 \\
-Chlorothalonil      & 158.417 & 14.835 & 117.761 & 8.386 \\
-\rowcolor{red!12}Triadimefon         & 173.252 & 0      & 126.147 & 0 \\
-\rowcolor{red!12}Cyantraniliprole    & 163.202 & 10.050 & 126.147 & 0 \\
-\rowcolor{red!12}Flutolanil          & 173.252 & 0      & 126.147 & 0 \\
-Indoxacarb          & 166.359 & 6.893  & 120.073 & 6.074 \\
-Abamectin           & 162.971 & 10.281 & 119.094 & 7.053 \\
-\rowcolor{red!12}Propamocarb.HCL     & 173.252 & 0      & 126.147 & 0 \\
-Chlothianidin       & 166.446 & 6.806  & 120.073 & 6.074 \\
+Thiamethoxam        & 212.768 & 123.037 & 340.812 & 39.217 \\
+Permethrin          & 302.954 & 32.851  & 322.664 & 57.365 \\
+Metalaxyl           & 323.305 & 12.500  & 348.423 & 31.606 \\
+Azoxystrobin        & 297.196 & 38.609  & 326.817 & 53.212 \\
+Imidaclopird        & 303.987 & 31.818  & 345.626 & 34.403 \\
+Difenoconazole      & 297.301 & 38.504  & 327.098 & 52.931 \\
+Cypermethrin        & 310.712 & 25.093  & 300.724 & 79.305 \\
+Cyhalothrin         & 307.959 & 27.846  & 342.942 & 37.087 \\
+Chlorantraniliprol  & 314.507 & 21.298  & 356.811 & 23.218 \\
+Chlopyrifos Methyl  & 320.241 & 15.564  & 365.428 & 14.601 \\
+Emamectin benzoate  & 289.579 & 46.226  & 306.278 & 73.751 \\
+Chlorothalonil      & 278.169 & 57.636  & 307.331 & 72.698 \\
+Triadimefon         & 325.091 & 10.714 & 369.551 & 10.478 \\
+Cyantraniliprole    & 313.967 & 21.838  & 351.449 & 28.580 \\
+Flutolanil          & 308.034 & 27.771  & 368.685 & 11.344 \\
+Indoxacarb          & 324.035 & 11.770  & 370.043 & 9.986 \\
+Abamectin           & 310.571 & 25.234  & 343.587 & 36.442 \\
+Propamocarb.HCL     & 325.134 & 10.671 & 368.798 & 11.231 \\
+Chlothianidin       & 292.847 & 42.958  & 289.702 & 90.327 \\
 \hline
 \end{tabular}%
 }
 
 \vspace{2pt}
-{\footnotesize \colorbox{red!12}{\rule{0pt}{6pt}\rule{6pt}{0pt}} các dòng
-tô đỏ: có ít nhất một máy với 0 mẫu dương (không thể huấn luyện mô hình
-phát hiện/hồi quy tương ứng trên máy đó).}
+{\footnotesize Cả 19 thuốc trừ sâu đều có mẫu dương trên cả hai máy, không
+thuốc trừ sâu nào bị loại hoàn toàn khỏi bài toán (2) trên bất kỳ máy nào.}
 \end{table}
 
 Bảng~\ref{tab:sub-counts} cho thấy mức mất cân bằng lớp nghiêm trọng hơn
-nhiều so với bài toán phân loại: đa số thuốc trừ sâu chỉ xuất hiện trong
-dưới 10\% tổng số mẫu, với Permethrin là thuốc trừ sâu phổ biến nhất trên cả
-hai máy (14,3\% ở FLAMENIR, 20,5\% ở OCEANFX). Ba thuốc trừ sâu (Triadimefon,
-Flutolanil, Propamocarb.HCL) không có mẫu dương nào trên cả hai máy; riêng
-Cyantraniliprole có 10.050 mẫu dương trên FLAMENIR nhưng bằng 0 trên OCEANFX,
-phản ánh sự khác biệt giữa hai đợt lấy mẫu chứ không phải do bản thân thiết
-bị đo. Các thuốc trừ sâu không có mẫu dương trên một máy nào đó khiến không
-thể huấn luyện được mô hình phát hiện/hồi quy tương ứng, thể hiện qua các
-giá trị NaN ở Mục~\ref{sec:results}.
+nhiều so với bài toán phân loại. Trên FLAMENIR, Thiamethoxam là thuốc trừ
+sâu phổ biến nhất với 123.037 mẫu dương (36,6\% tổng số mẫu); trên
+OCEANFX, Chlothianidin dẫn đầu với 90.327 mẫu dương (23,8\%). Hai thuốc trừ
+sâu có số mẫu dương ít nhất là Propamocarb.HCL (10.671 trên FLAMENIR) và
+Triadimefon (10.714 trên FLAMENIR, 10.478 trên OCEANFX) -- dù mỏng hơn các
+thuốc phổ biến, số lượng này đã đủ lớn để không còn là mối lo về độ ổn định
+của Bước 1, minh chứng bằng kết quả thực nghiệm ở Mục~\ref{sec:results}.
+
+Trong số các mẫu có chứa thuốc trừ sâu, Bảng~\ref{tab:sub-safety} phân tách
+tiếp theo MRL của đúng cặp (thực phẩm, thuốc trừ sâu) của từng mẫu
+(Mục~\ref{sec:data-thresholds}, Phương trình~\ref{eq:safety-label}) thành
+số mẫu An toàn (đã phát hiện nhưng dưới MRL) và Vượt ngưỡng (đã phát hiện và
+trên MRL). Đây là phần khó thực sự của nhãn Vượt ngưỡng -- phân biệt An
+toàn với Vượt ngưỡng \emph{trong số các mẫu đã phát hiện}; Bước 2
+(Mục~\ref{sec:stage-training}) huấn luyện trên toàn bộ mẫu chứ không chỉ tập
+con này (mẫu không phát hiện được gộp thẳng vào An toàn), nhưng phần thông
+tin ở bảng này mới là ranh giới quyết định mà mô hình thực sự phải học,
+phần còn lại (không phát hiện $\Rightarrow$ An toàn) gần như hiển nhiên.
+
+\begin{table}[htbp]
+\centering
+\caption{Trong số mẫu có chứa thuốc trừ sâu: số mẫu An toàn (dưới MRL) và
+Vượt ngưỡng (trên MRL)}
+\label{tab:sub-safety}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|r|r|r|r|}
+\hline
+\multirow{2}{*}{\textbf{Thuốc trừ sâu}} & \multicolumn{2}{c|}{\textbf{FLAMENIR}} & \multicolumn{2}{c|}{\textbf{OCEANFX}} \\
+\cline{2-5}
+ & \textbf{An toàn} & \textbf{Vượt ngưỡng} & \textbf{An toàn} & \textbf{Vượt ngưỡng} \\
+\hline
+Thiamethoxam        & 20.830 & 102.207 & 7.964 & 31.253 \\
+Permethrin          & 4.348 & 28.503  & 17.135 & 40.230 \\
+Metalaxyl           & 1.353  & 11.147  & 4.035  & 27.571 \\
+Azoxystrobin        & 23.338 & 15.271  & 33.668 & 19.544 \\
+Imidaclopird        & 13.024 & 18.794  & 13.174 & 21.229 \\
+Difenoconazole      & 4.615  & 33.889  & 5.344  & 47.587 \\
+Cypermethrin        & 3.834  & 21.259  & 13.641 & 65.664 \\
+Cyhalothrin         & 9.285  & 18.561  & 11.309 & 25.778 \\
+Chlorantraniliprol  & 8.946  & 12.352  & 10.339 & 12.879 \\
+Chlopyrifos Methyl  & 1.353  & 14.211  & 2.732  & 11.869 \\
+Emamectin benzoate  & 2.239  & 43.987  & 2.068  & 71.683 \\
+Chlorothalonil      & 23.473 & 34.163  & 35.408 & 37.290 \\
+\rowcolor{yellow!30}Triadimefon         & 0      & 10.714  & 0      & 10.478 \\
+Cyantraniliprole    & 7.616  & 14.222  & 12.059 & 16.521 \\
+\rowcolor{yellow!30}Flutolanil          & 0      & 27.771  & 0      & 11.344 \\
+Indoxacarb          & 3.117  & 8.653   & 2.110  & 7.876 \\
+Abamectin           & 1.050  & 24.184  & 1.037  & 35.405 \\
+Propamocarb.HCL     & 4.182  & 6.489   & 4.158  & 7.073 \\
+Chlothianidin       & 1.418  & 41.540  & 1.189  & 89.138 \\
+\hline
+\end{tabular}%
+}
+
+\vspace{2pt}
+{\footnotesize \colorbox{yellow!30}{\rule{0pt}{6pt}\rule{6pt}{0pt}} các dòng
+tô vàng: 0 mẫu An toàn \emph{trong số mẫu đã phát hiện}, trên \emph{cả hai}
+máy (mọi mẫu phát hiện được, trên cả FLAMENIR lẫn OCEANFX, đều Vượt ngưỡng)
+-- không đồng nghĩa Bước 2 thiếu dữ liệu để huấn luyện, vì Bước 2 huấn
+luyện trên toàn bộ mẫu (Mục~\ref{sec:stage-training}) và mẫu không phát
+hiện luôn được gộp vào lớp An toàn, đủ để cân bằng hai lớp cho cả hai thuốc
+này.}
+\end{table}
+
+\textbf{Nhận xét.} Bảng~\ref{tab:sub-safety} cho thấy bức tranh khá cân
+bằng: trong số mẫu \emph{đã phát hiện}, chỉ còn đúng hai thuốc trừ sâu có
+phân bố cực đoan, và cả hai đều nhất quán trên \emph{cả hai} máy --
+Triadimefon và Flutolanil luôn Vượt ngưỡng khi phát hiện (100\% trên cả
+FLAMENIR và OCEANFX). Propamocarb.HCL có đủ mẫu ở cả hai lớp để không cực
+đoan (60,8\%/63,0\%). Vì Bước 2 huấn luyện trên toàn bộ mẫu chứ không riêng
+tập con đã phát hiện, tính cực đoan của Triadimefon/Flutolanil trong
+Bảng~\ref{tab:sub-safety} không khiến Bước 2 thiếu dữ liệu huấn luyện cho
+hai thuốc này -- chỉ phản ánh rằng, một khi đã phát hiện được hai thuốc
+này, hầu như chắc chắn là Vượt ngưỡng.
+
+Toàn bộ 17 thuốc trừ sâu còn lại đều có đủ hai lớp An toàn và Vượt ngưỡng
+ngay trong tập con đã phát hiện trên cả hai máy, đủ dữ liệu để Bước 2 thực
+sự học ranh giới quyết định thay vì chỉ ghi nhớ lớp đa số. Ba thuốc có tỉ
+lệ Vượt ngưỡng cao nhất và khá nhất
+quán giữa hai máy là Chlothianidin (96,7\%/98,7\%), Abamectin
+(95,8\%/97,2\%) và Emamectin benzoate (95,2\%/97,2\%). Một vài thuốc cho
+thấy khác biệt đáng chú ý giữa hai máy -- Chlopyrifos Methyl (91,3\% trên
+FLAMENIR so với 81,3\% trên OCEANFX) và Difenoconazole (88,0\% so với
+89,9\%) -- củng cố nhận định đã nêu ở trên rằng khác biệt giữa hai máy chủ
+yếu đến từ đợt lấy mẫu thực tế (dải nồng độ được khảo sát) chứ không phải
+đặc tính riêng của thiết bị đo.
 
 \subsection{Trực quan hóa dữ liệu}
 
@@ -506,12 +758,13 @@ loại rau củ quả}
 
 Hình~\ref{fig:spectra} cho thấy các loại rau củ quả có hình dạng phổ NIR khá
 tương đồng trên cùng một máy (cùng vị trí đỉnh hấp thụ) nhưng khác nhau rõ
-rệt về cường độ tuyệt đối -- ở FLAMENIR, Cải Bẹ Xanh và Xà Lách cho cường độ
+rệt về cường độ tuyệt đối -- ở FLAMENIR, Dưa Leo và Cải Bẹ Xanh cho cường độ
 cao nhất còn Khổ Qua thấp nhất; đây là cơ sở để mô hình phân biệt được loại
 rau củ quả từ phổ thô. Phổ từ OCEANFX (Hình~\ref{fig:spectra-oceanfx}) có độ
 phân giải bước sóng cao hơn nhiều (2.136 so với 128 điểm) và bộc lộ rõ hai
-đỉnh hấp thụ chính, cùng dải độ lệch chuẩn rộng hơn ở vùng bước sóng thấp,
-phản ánh mức biến thiên tín hiệu cao hơn giữa các cá thể mẫu trong vùng này.
+đỉnh hấp thụ chính, với Dưa Leo cho cường độ cao nhất tại đỉnh chính và Cà
+Chua thấp nhất, cùng dải độ lệch chuẩn rộng ở vùng bước sóng giữa, phản ánh
+mức biến thiên tín hiệu cao hơn giữa các cá thể mẫu trong vùng này.
 
 \begin{figure*}[t]
 \centering
@@ -534,53 +787,83 @@ theo loại rau củ quả, dùng chung thang màu giữa hai máy để so sán
 \end{figure*}
 
 Hình~\ref{fig:crosstab} cho thấy tỉ lệ nhiễm phân bố không đồng đều giữa các
-loại rau củ quả và giữa hai máy: ở FLAMENIR, Cà Chua có tỉ lệ nhiễm
-Thiamethoxam và Chlothianidin cao nhất trong khi Khổ Qua nổi bật với
-Cypermethrin và Imidaclopird; ở OCEANFX, ô có tỉ lệ nhiễm cao nhất toàn bảng
-là Thiamethoxam tại Cà Chua (43,7\%), theo sau là Permethrin tại Xà Lách
-(41,6\%) -- Permethrin cũng là thuốc trừ sâu phổ biến nhất trên máy này, với
-tỉ lệ trên 20\% ở nhiều loại rau củ quả khác nhau.
+loại rau củ quả và giữa hai máy. Trên FLAMENIR, ô có tỉ lệ nhiễm cao nhất
+toàn bảng là Thiamethoxam tại Cải Bẹ Xanh (46,6\%); Thiamethoxam vượt trên
+30\% ở cả 9/9 loại rau củ quả, nhất quán với việc là thuốc trừ sâu phổ biến
+nhất trên máy này (Bảng~\ref{tab:sub-counts}). Trên OCEANFX, Chlothianidin
+dẫn đầu cả về tổng số mẫu dương lẫn tỉ lệ nhiễm theo từng loại, với ô cao
+nhất toàn bảng là Chlothianidin tại Cà Chua (35,4\%) và vượt trên 15\% ở 5/9
+loại rau củ quả.
+
+Về mức độ đồng nhiễm: trong tổng số 335.805 mẫu FLAMENIR, 29.908 mẫu
+(8,9\%) không phát hiện thuốc trừ sâu nào (mẫu sạch), 110.845 mẫu (33,0\%)
+chỉ chứa đúng một loại, và 195.052 mẫu (58,1\%) đồng thời chứa từ hai loại
+trở lên -- trong đó 23.216 mẫu chứa cùng lúc từ bốn loại trở lên. Ở OCEANFX,
+trong tổng số 380.029 mẫu, 33.195 mẫu (8,7\%) là mẫu sạch, 97.005 mẫu
+(25,5\%) chứa đúng một loại, và 249.829 mẫu (65,7\%) đồng thời chứa từ hai
+loại trở lên -- trong đó 35.948 mẫu chứa từ bốn loại trở lên. Đồng nhiễm từ
+hai loại trở lên là trường hợp \emph{phổ biến nhất} trên cả hai máy,
+vượt xa cả mẫu sạch lẫn mẫu chỉ chứa một loại -- một khác biệt cần lưu ý khi
+so sánh hiệu năng phát hiện giữa hai máy ở Mục~\ref{sec:results}. Đồng
+nhiễm nhiều thuốc trừ sâu cũng là một trong những lý do khiến việc tách bài
+toán phát hiện thành 19 mô hình nhị phân độc lập (Mục~\ref{sec:xgboost}) phù
+hợp hơn một bộ phân loại đa nhãn đơn lẻ
+giả định các nhãn độc lập tuyệt đối.
 
 \begin{figure*}[t]
 \centering
 \begin{subfigure}[b]{0.49\textwidth}
 \centering
-\includegraphics[width=\textwidth]{figs/concbox_FLAMENIR.png}
+\includegraphics[width=\textwidth]{figs/safety_FLAMENIR.png}
 \caption{Máy FLAMENIR}
-\label{fig:concbox-flamenir}
+\label{fig:safety-flamenir}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.49\textwidth}
 \centering
-\includegraphics[width=\textwidth]{figs/concbox_OCEANFX.png}
+\includegraphics[width=\textwidth]{figs/safety_OCEANFX.png}
 \caption{Máy OCEANFX}
-\label{fig:concbox-oceanfx}
+\label{fig:safety-oceanfx}
 \end{subfigure}
-\caption{Phân bố nồng độ (chuẩn hóa 0--1 theo từng chất) trong các mẫu có
-phát hiện}
-\label{fig:concbox}
+\caption{Tỉ lệ (\%, làm tròn) Vượt ngưỡng trong số mẫu \emph{đã phát hiện},
+theo từng cặp (thuốc trừ sâu, loại rau củ quả) -- phần tách theo loại thực
+phẩm của Bảng~\ref{tab:sub-safety}. Ô ``--'' (Chlopyrifos Methyl tại Xà
+Lách, OCEANFX) không có mẫu phát hiện nào để tính tỉ lệ.}
+\label{fig:safety-heatmap}
 \end{figure*}
 
-Về mức độ đồng nhiễm: trong tổng số 173.252 mẫu FLAMENIR, 47.635 mẫu
-(27,5\%) không phát hiện thuốc trừ sâu nào (mẫu sạch), 96.021 mẫu (55,4\%)
-chỉ chứa đúng một loại, và 29.596 mẫu (17,1\%) đồng thời chứa từ hai loại trở
-lên -- trong đó 563 mẫu chứa cùng lúc cả bốn loại. Ở OCEANFX, trong tổng số
-126.147 mẫu, 47.047 mẫu (37,3\%) là mẫu sạch, 51.266 mẫu (40,7\%) chứa đúng
-một loại, và 27.834 mẫu (22,1\%) đồng thời chứa từ hai loại trở lên -- trong
-đó 1.003 mẫu chứa cả bốn loại. Tỉ lệ đồng nhiễm ở OCEANFX cao hơn FLAMENIR
-(22,1\% so với 17,1\%), một khác biệt cần lưu ý khi so sánh hiệu năng phát
-hiện giữa hai máy ở Mục~\ref{sec:results}. Đồng nhiễm nhiều thuốc trừ sâu
-cũng là một trong những lý do khiến việc tách bài toán phát hiện thành 19 mô
-hình nhị phân độc lập (Mục~\ref{sec:xgboost}) phù hợp hơn một bộ phân loại đa
-nhãn đơn lẻ giả định các nhãn độc lập tuyệt đối.
+Hình~\ref{fig:safety-heatmap} tách Bảng~\ref{tab:sub-safety} theo từng loại
+thực phẩm và cho thấy một hiện tượng quan trọng bị che khuất khi chỉ nhìn số
+liệu gộp theo máy: phần lớn các cặp (thuốc trừ sâu, loại rau củ quả) gần như
+\emph{tất định} chứ không hề "cân bằng" -- 115/171 cặp (67,3\%) trên
+FLAMENIR và 109/170 cặp (64,1\%) trên OCEANFX có tỉ lệ Vượt ngưỡng đúng
+bằng 0\% hoặc 100\%. Hiện tượng này lặp lại nhất quán giữa hai máy: ví dụ
+Azoxystrobin luôn 0\% (toàn bộ mẫu phát hiện đều An toàn) tại Mồng Tơi, Cải
+Thìa, Cải Bẹ Xanh và Đậu Cove -- trên \emph{cả hai} máy -- nhưng phần lớn
+Vượt ngưỡng ở các loại còn lại; Chlorantraniliprol tương tự luôn 0\% tại
+Mồng Tơi, Cải Thìa, Cải Bẹ Xanh trên cả hai máy; Indoxacarb luôn 0\% tại
+Đậu Cove và Cà Rốt trên cả hai máy nhưng 100\% ở 7 loại còn lại; Propamocarb.HCL
+luôn 0\% tại Mồng Tơi, Cà Chua, Dưa Leo trên cả hai máy.
+
+Điều này giải thích vì sao tỉ lệ Vượt ngưỡng \emph{gộp theo máy} ở
+Bảng~\ref{tab:sub-safety} lại có vẻ "cân bằng vừa phải" với nhiều thuốc trừ
+sâu (ví dụ Propamocarb.HCL 60,8\%/63,0\%, Imidaclopird 59,1\%/61,7\%) -- con
+số gộp đó thực chất là hỗn hợp của các loại thực phẩm gần như chắc chắn An
+toàn và các loại gần như chắc chắn Vượt ngưỡng, chứ không phải một ranh giới
+quyết định mờ nhạt cần suy luận từ phổ. Quan sát này củng cố trực tiếp quyết
+định đưa loại thực phẩm vào làm đặc trưng đầu vào tường minh cho Bước 1 và
+Bước 2 (Mục~\ref{sec:overview}): với nhiều cặp (thuốc, thực phẩm), chỉ riêng
+việc biết đúng loại thực phẩm đã gần như quyết định được nhãn An
+toàn/Vượt ngưỡng, nên phần khó thực sự của bài toán tập trung ở một tập con
+nhỏ hơn nhiều so với 19 thuốc $\times$ 9 loại thực phẩm đầy đủ.
 
 %=====================================================================
 \section{Thiết lập thực nghiệm}
 
 Tất cả các thí nghiệm được thực hiện trên hệ điều hành Ubuntu 22.04, sử dụng
-PyTorch 2.9.1 và Python 3.12.11 với CUDA hỗ trợ, chạy trên GPU NVIDIA RTX
-5090 Ti và được trang bị CPU Intel\textregistered{} Xeon\textregistered{}
-E5-2696 v3 @ 2.30 GHz.
+PyTorch 2.9.1 và Python 3.12.11 với CUDA hỗ trợ, chạy trên GPU NVIDIA GeForce
+RTX 5060 Ti (16 GB VRAM) và được trang bị CPU Intel\textregistered{}
+Xeon\textregistered{} E5-2696 v3 @ 2.30 GHz (72 luồng, 125 GB RAM).
 
 \subsection{Phân loại rau củ quả}
 
@@ -611,6 +894,13 @@ Trước mỗi fold, dữ liệu huấn luyện được sử dụng để ướ
 hóa và ánh xạ nhãn, sau đó áp dụng thống nhất cho cả tập huấn luyện và tập
 kiểm tra nhằm tránh rò rỉ thông tin. Trong mỗi fold, dữ liệu được lấy mẫu và
 gom thành lô (batch) kích thước 512, giúp tăng hiệu quả huấn luyện trên GPU.
+Riêng SMART-NIR và GuidedDCNet trên máy OCEANFX, phổ 2.136 điểm được gộp
+trung bình theo nhóm 8 điểm liên tiếp còn 264 điểm trước khi đưa vào mô
+hình -- độ phân giải đầy đủ khiến chi phí tính toán của cơ chế tự chú ý
+(self-attention) và bộ mã hóa ResNet1D tăng mạnh, trong khi 264 điểm vẫn
+giữ nguyên các đỉnh hấp thụ chính quan sát được ở Hình~\ref{fig:spectra}.
+XGBoost và LightGBM không cần bước này, vì cây quyết định vốn không nhạy
+với số chiều đầu vào theo cách đó.
 
 Mô hình SMART-NIR được khởi tạo với các tham số chính bao gồm: (1) Chiều dài
 tín hiệu đầu vào bằng độ dài phổ sau tiền xử lý; (2) Số kênh đầu ra cho mỗi
@@ -637,7 +927,36 @@ giá, với ngưỡng kiên nhẫn là 10 epoch: mô hình đạt độ chính x
 nhất sẽ được lưu lại, và quá trình huấn luyện dừng sớm nếu không có cải
 thiện trong nhiều epoch liên tiếp.
 
-\subsection{Dự đoán hàm lượng các thuốc trừ sâu có trong mẫu}
+\textbf{GuidedDCNet} (Mục~\ref{sec:guideddcnet}) được huấn luyện theo hai
+giai đoạn tuần tự, trên cùng cách chia K-Fold nêu trên để đảm bảo so sánh
+công bằng với SMART-NIR. Giai đoạn 1 (huấn luyện trước) chạy cố định 25
+epoch, tối ưu hàm mất mát Cross-Entropy trên tổng logits của MCGM và một
+đầu phân loại tạm thời gắn vào bộ mã hóa dữ liệu (bị loại bỏ sau giai đoạn
+này), dùng Adam với tốc độ học $5{\times}10^{-4}$; trọng số tại epoch đạt
+độ chính xác kiểm định cao nhất được khôi phục trước khi bước sang giai
+đoạn 2 thay vì dùng trọng số ở epoch cuối cùng. Giai đoạn 2 (huấn luyện
+khuếch tán đầy đủ) chạy cố định 200 epoch, không dừng sớm, phù hợp với đặc
+điểm hàm mất mát khuếch tán vốn dao động mạnh giữa các epoch (Phương
+trình~\ref{eq:gdcnet-loss}
+với $t$ được lấy mẫu ngẫu nhiên mỗi batch) nên tiêu chí dừng sớm dựa trên
+hàm mất mát thô dễ kích hoạt nhầm. Tham số được tối ưu bằng Adam với hai
+nhóm tốc độ học riêng: $5{\times}10^{-4}$ cho MCGM và bộ mã hóa dữ liệu,
+$10^{-3}$ cho UNet có điều kiện, cùng lịch suy giảm Cosine Annealing trên
+toàn bộ 200 epoch. Ở mỗi epoch, mô hình được đánh giá bằng một lượt khuếch
+tán ngược đầy đủ $T=100$ bước (Mục~\ref{sec:guideddcnet}); checkpoint tại
+epoch đạt độ chính xác kiểm định cao nhất được lưu lại.
+
+\textbf{XGBoost và LightGBM} (Mục~\ref{sec:xgboost}, \ref{sec:lightgbm})
+được huấn luyện trên cùng cách chia K-Fold phân tầng nêu trên, nhưng trực
+tiếp trên phổ NIR sau Savitzky--Golay và SNV, không qua thêm bước chuẩn hóa
+nào khác: cây quyết định bất biến với các phép biến đổi affine theo từng
+cột (mỗi nhát cắt chỉ so sánh giá trị trong cùng một đặc trưng), nên không
+cần chuẩn hóa như đầu vào của SMART-NIR/GuidedDCNet. Cả hai dùng hàm mục
+tiêu entropy chéo đa lớp, tối đa 300 cây, độ sâu tối đa 6, tốc độ học
+$0{,}1$, cùng cơ chế dừng sớm sau 20 vòng lặp không cải thiện log-loss trên
+tập kiểm tra.
+
+\subsection{Đánh giá an toàn thuốc trừ sâu}
 
 \subsubsection{Tiền xử lý dữ liệu}
 \label{sec:stage2-preprocess}
@@ -647,54 +966,85 @@ Tương tự với quy trình tiền xử lý ở bài toán phân loại, dữ 
 dụng Savitzky--Golay và SNV để làm nổi bật các đặc trưng quan trọng và hạn
 chế ảnh hưởng của tán xạ ánh sáng.
 
-Toàn bộ dữ liệu (kể cả mất cân bằng) được giữ nguyên, không loại bớt mẫu
-không chứa thuốc trừ sâu, nhằm không lãng phí thông tin từ các mẫu âm; mất
-cân bằng nhãn được xử lý trực tiếp trong quá trình huấn luyện XGBoost
-(Mục~\ref{sec:xgboost}, Bước 1) thông qua trọng số
-\texttt{scale\_pos\_weight}. Đối với bài toán hồi quy nồng độ
-(Bước 2), biến mục tiêu được biến đổi log ($\log(1+y)$) trước khi chuẩn hóa
-Z-score theo từng fold, nhằm giảm độ lệch phải của phân bố nồng độ (đa số
-giá trị nhỏ, một số ít giá trị lớn) và ổn định quá trình học; các chỉ số
-MAE, RMSE, $R^{2}$ báo cáo ở Mục~\ref{sec:results} được tính sau khi biến
-đổi ngược dự đoán về đơn vị nồng độ gốc (mg/kg). Cuối cùng, dữ liệu được
-chia thành các tập huấn luyện và kiểm tra phục vụ cho bài toán phát hiện và
-dự đoán hàm lượng thuốc trừ sâu có trong mẫu.
+Toàn bộ dữ liệu (kể cả mất cân bằng) được giữ nguyên cho cả hai bước, không
+loại bớt mẫu nào khỏi tập huấn luyện; mất cân bằng nhãn được xử lý trực tiếp
+trong quá trình huấn luyện (trọng số bù đắp mất cân bằng lớp cho
+XGBoost/LightGBM, lấy mẫu lại lớp dương theo lô cho SMART-NIR,
+Mục~\ref{sec:stage-training}). Nhãn Bước 1 ánh xạ
+trực tiếp từ giá trị đo ($-1$ hay khác $-1$); nhãn Bước 2 so sánh nồng độ
+thực đo với MRL theo Phương trình~\ref{eq:safety-label}, trong đó mẫu không
+phát hiện ($-1$) luôn được gán An toàn cùng với mẫu phát hiện nhưng dưới
+MRL, tra đúng ngưỡng MRL của cặp (thực phẩm, thuốc trừ sâu) tương ứng từng
+mẫu (Mục~\ref{sec:data-thresholds}). Với cả hai bước, loại thực phẩm của mẫu
+(nhãn thật khi huấn luyện) được mã hóa one-hot (9 chiều) và nối thêm vào đặc
+trưng phổ trước khi đưa vào mô hình, vì ngưỡng MRL dùng để gán nhãn phụ
+thuộc trực tiếp vào loại thực phẩm. Cuối cùng, dữ liệu được chia thành các
+tập huấn luyện và kiểm tra phục vụ cho từng bước.
 
 \subsubsection{Chi tiết huấn luyện}
 \label{sec:stage-training}
 
-Một chiến lược huấn luyện hai bước được sử dụng nhằm xử lý hiệu quả bài toán
-phân tích phổ NIR với nhiều thuốc trừ sâu khác nhau. Cách tiếp cận này cho phép
-tách biệt rõ ràng giữa bài toán phát hiện sự hiện diện của thuốc trừ sâu và bài
-toán ước lượng nồng độ, từ đó nâng cao độ ổn định và độ chính xác của toàn hệ
-thống.
+Một chiến lược huấn luyện hai bước theo tầng (cascade) được sử dụng nhằm xử
+lý hiệu quả bài toán đánh giá an toàn thuốc trừ sâu với nhiều thuốc trừ sâu
+khác nhau. Cách tiếp cận này cho phép tách biệt rõ ràng giữa bài toán phát
+hiện sự hiện diện của thuốc trừ sâu và bài toán phân loại mức độ an toàn,
+từ đó nâng cao độ ổn định và độ chính xác của toàn hệ thống. Cả hai bước
+huấn luyện độc lập cho từng loại trong 19 thuốc trừ sâu khảo sát, và ba
+kiến trúc của Mô-đun Phân loại (XGBoost, LightGBM, SMART-NIR;
+Mục~\ref{sec:module-clf}) được cài đặt và đánh giá cho mỗi bước.
 
-\textbf{Bước 1:} Ở bước đầu tiên, mỗi thuốc trừ sâu được xem như một bài toán
-phân loại nhị phân độc lập, trong đó mục tiêu là xác định liệu thuốc trừ sâu đó
-có xuất hiện trong mẫu hay không. Nhãn được xây dựng bằng cách ánh xạ giá trị
-đo: các mẫu có giá trị lớn hơn 0 được gán nhãn 1 (có thuốc trừ sâu), trong khi
-các mẫu có giá trị $-1$ được gán nhãn 0 (không có thuốc trừ sâu). Quá trình huấn
-luyện sử dụng kiểm định chéo K-Fold phân tầng (5 fold) để đảm bảo phân bố
-nhãn cân bằng giữa các tập.
+\textbf{Bước 1 -- Phát hiện:} Mỗi thuốc trừ sâu được xem như một bài toán
+phân loại nhị phân độc lập, trong đó mục tiêu là xác định liệu thuốc trừ sâu
+đó có xuất hiện trong mẫu hay không. Nhãn được xây dựng bằng cách ánh xạ giá
+trị đo: các mẫu có giá trị khác $-1$ được gán nhãn 1 (có thuốc trừ sâu),
+trong khi các mẫu có giá trị $-1$ được gán nhãn 0 (không có thuốc trừ sâu,
+kết luận cuối cùng An toàn ngay ở bước này). Quá trình huấn luyện sử dụng
+kiểm định chéo K-Fold phân tầng (5 fold) để đảm bảo phân bố nhãn cân bằng
+giữa các tập.
 
-Mô hình được huấn luyện bằng XGBoost với hàm mục tiêu binary logistic, kết
-hợp cơ chế dừng sớm dựa trên log-loss của tập kiểm tra. Trọng số
-\texttt{scale\_pos\_weight} được đặt bằng tỉ lệ số mẫu âm/dương của fold
-huấn luyện để bù đắp mất cân bằng nhãn mà không cần loại bỏ dữ liệu (như đã
-nêu ở Mục~\ref{sec:stage2-preprocess}). Độ phức tạp cây (số cây, độ sâu tối
-đa, tốc độ học) được điều chỉnh theo số mẫu dương của từng thuốc trừ sâu --
+Với XGBoost/LightGBM (Mục~\ref{sec:xgboost}, \ref{sec:lightgbm}), mô hình
+được huấn luyện với hàm mục tiêu binary logistic, kết hợp cơ chế dừng sớm
+dựa trên log-loss của tập kiểm tra. Trọng số bù đắp mất cân bằng lớp được
+đặt bằng tỉ lệ số mẫu âm/dương của fold huấn luyện để bù đắp mất cân bằng
+nhãn mà không cần loại bỏ dữ liệu. Độ phức tạp cây (số cây, độ sâu tối đa,
+tốc độ học) được điều chỉnh theo số mẫu dương của từng thuốc trừ sâu --
 thuốc có ít mẫu dương hơn dùng cây nông và ít cây hơn để giảm nguy cơ quá
-khớp.
+khớp. Với SMART-NIR, mất cân bằng nhãn -- thường nặng hơn nhiều
+so với bài toán phân loại thực phẩm, có thuốc trừ sâu chỉ chiếm dưới 3\%
+mẫu dương (Bảng~\ref{tab:sub-counts}) -- được xử lý bằng lấy mẫu lại
+(oversampling) lớp dương ngay trong mỗi lô huấn luyện: 25\% mỗi lô luôn là
+mẫu dương (lấy có hoàn lại), phần còn lại lấy ngẫu nhiên từ lớp âm, thay vì
+gán trọng số như XGBoost/LightGBM hay dùng Focal Loss. Thử nghiệm thực tế
+cho thấy với thuốc hiếm, huấn luyện theo lô hoàn toàn ngẫu nhiên khiến phần
+lớn lô không có mẫu dương nào, mô hình dễ mắc kẹt ở lời giải tầm thường
+(luôn đoán không có) trong nhiều epoch đầu; lấy mẫu lại đảm bảo mọi lô đều
+mang tín hiệu của lớp thiểu số. Hàm mất mát là entropy chéo thông thường
+(không cần trọng số riêng, vì việc lấy mẫu lại đã cân bằng lớp ở cấp độ lô).
+SMART-NIR dùng AdamW (tốc độ học đỉnh $2{\times}10^{-3}$, suy giảm trọng số
+$10^{-4}$) với lịch OneCycle (khởi động 10\% số epoch đầu, sau đó suy giảm
+dần), lô kích thước 2.048, tối đa 50 epoch, dừng sớm theo PR-AUC trên tập
+đánh giá (không sớm hơn epoch thứ 10, để tránh dừng nhầm trong pha tốc độ
+học còn cao) với ngưỡng kiên nhẫn 8 epoch.
 
-Vì \texttt{scale\_pos\_weight} làm lệch xác suất đầu ra của mô hình khỏi xác
+Vì cơ chế bù đắp mất cân bằng lớp (trọng số cho XGBoost/LightGBM, lấy mẫu
+lại cho SMART-NIR) làm lệch xác suất đầu ra của mô hình khỏi xác
 suất thực, một bước hiệu chỉnh Platt scaling (hồi quy logistic một chiều)
-được fit trên chính dự đoán của tập huấn luyện, rồi áp dụng lại cho tập kiểm
-tra để tránh rò rỉ thông tin.
+được khớp và áp dụng lại cho tập kiểm tra để tránh rò rỉ thông tin. Với
+XGBoost/LightGBM, Platt scaling được khớp trực tiếp trên dự đoán của toàn bộ
+tập huấn luyện. Với SMART-NIR, một phần nhỏ (15\%) của tập huấn
+luyện được tách riêng trước khi bắt đầu huấn luyện, không tham gia cập nhật
+trọng số mạng, chỉ dùng để khớp Platt scaling và chọn ngưỡng (bên dưới): vì
+mạng nơ-ron dễ khớp gần như hoàn hảo chính các mẫu đã thấy (train loss tiệm
+cận 0), hiệu chỉnh trên chính các mẫu đó cho ra ngưỡng quá khắt khe khi áp
+dụng lại cho mẫu chưa thấy, trong khi XGBoost/LightGBM không gặp vấn đề
+tương tự ở cùng mức độ.
 
 Thay vì cố định ngưỡng phân loại ở 0,5, ngưỡng quyết định được chọn tự động
 bằng cách quét toàn bộ đường cong Precision-Recall (trên xác suất đã hiệu
-chỉnh của \emph{tập huấn luyện}, cùng lý do tránh rò rỉ như bước hiệu chỉnh
-Platt scaling) và chọn ngưỡng cho Precision cao nhất trong số các ngưỡng đạt
+chỉnh của cùng tập dữ liệu dùng để khớp Platt scaling ở trên -- toàn bộ tập
+huấn luyện với XGBoost/LightGBM, phần tách riêng 15\% với SMART-NIR
+-- cùng lý do tránh rò rỉ) và chọn ngưỡng cho Precision cao nhất trong số các
+ngưỡng đạt
 Recall lớp dương $\geq 0{,}9$; nếu không ngưỡng nào đạt được mục tiêu này,
 ngưỡng cho Recall cao nhất được dùng thay thế. Lựa chọn này phản ánh đặc thù
 bài toán an toàn thực phẩm, nơi bỏ sót một mẫu thực sự có thuốc trừ sâu
@@ -709,35 +1059,60 @@ Recall thay vì mặc định 0,5, PR-AUC (không phụ thuộc ngưỡng) là c
 tin cậy hơn Accuracy/F1 khi so sánh hiệu năng phát hiện giữa các thuốc trừ
 sâu.
 
-Bước này đóng vai trò như một bộ lọc (screening stage), giúp loại bỏ các mẫu
-không chứa thuốc trừ sâu trước khi thực hiện hồi quy nồng độ.
+Ở suy luận, Bước 1 đóng vai trò như một bộ lọc (screening stage): chỉ khi
+Bước 1 báo có phát hiện thì dự đoán của Bước 2 mới thực sự được sử dụng cho
+mẫu đó, còn lại kết luận An toàn được quyết định ngay từ Bước 1.
 
-\textbf{Bước 2:} Ở bước thứ hai, chỉ các mẫu có giá trị nồng độ hợp lệ (khác
-$-1$) mới được sử dụng để huấn luyện mô hình hồi quy. Với mỗi thuốc trừ sâu, một
-mô hình SMART-NIR riêng biệt được huấn luyện nhằm dự đoán chính xác giá trị
-nồng độ từ phổ NIR.
+\textbf{Bước 2 -- Phân loại mức độ:} Khác với một cascade huấn luyện thuần
+túy (chỉ dùng tập con Bước 1 xác định có phát hiện), Bước 2 huấn luyện trên
+\emph{toàn bộ} mẫu, cùng cỡ dữ liệu với Bước 1. Với mỗi thuốc trừ sâu, ba
+mô hình độc lập (XGBoost, LightGBM, SMART-NIR) được huấn luyện
+nhằm phân loại nhị phân An toàn/Vượt ngưỡng, tái sử dụng gần như nguyên vẹn
+cấu hình huấn luyện của Bước 1 (cùng hàm mục tiêu, cùng cơ chế cân bằng lớp,
+cùng bước hiệu chỉnh Platt scaling và chọn ngưỡng theo Recall $\geq 0{,}9$
+mô tả ở trên) -- bỏ sót một mẫu thực sự vượt ngưỡng MRL cũng nguy hiểm như
+bỏ sót một mẫu có thuốc trừ sâu ở Bước 1, nên áp dụng cùng triết lý ưu tiên
+Recall.
 
-Dữ liệu được chia theo K-Fold phân tầng (5 fold) trên các nhóm phân vị
-(quantile bin) của nồng độ mục tiêu, giúp mỗi fold có phân bố nồng độ tương
-đồng nhau thay vì lệch ngẫu nhiên như K-Fold thường; với thuốc trừ sâu không
-đủ dữ liệu để chia nhóm phân vị, phương pháp tự động chuyển về K-Fold thường.
-Trước mỗi fold, tham số chuẩn hóa của phổ và của biến mục tiêu đã qua biến
-đổi log (Mục~\ref{sec:stage2-preprocess}) được ước lượng từ tập huấn luyện
-và áp dụng thống nhất cho tập kiểm tra. Mô hình SMART-NIR được cấu hình với
-kiến trúc Transformer đa kernel và bộ hồi quy KAN ở đầu ra.
+Khác biệt so với Bước 1 nằm ở nguồn nhãn: nhãn Bước 2 so sánh nồng độ thực
+đo với MRL của đúng cặp (thực phẩm, thuốc trừ sâu) của mẫu đó (Phương
+trình~\ref{eq:safety-label}) thay vì chỉ kiểm tra $-1$ hay khác $-1$, nên
+cùng một mức nồng độ tuyệt đối có thể là An toàn với thực phẩm này nhưng
+Vượt ngưỡng với thực phẩm khác; mẫu không phát hiện luôn được gán An toàn,
+giống mẫu phát hiện nhưng dưới MRL. Vì tập huấn luyện của Bước 2 có cùng quy
+mô với Bước 1 (không giới hạn ở tập con đã phát hiện, vốn nhỏ hơn nhiều),
+phần lớn nhãn dương (Vượt ngưỡng) chiếm tỉ lệ nhỏ hơn hẳn so với khi chỉ
+tính trên mẫu đã phát hiện (Bảng~\ref{tab:sub-safety}); điều kiện dừng huấn
+luyện ($\geq 5$ mẫu mỗi lớp cho 5-fold) áp dụng như Bước 1, và không thuốc
+trừ sâu nào bị bỏ qua ở Bước 2 trên cả hai máy.
 
-Quá trình huấn luyện sử dụng Mean Squared Error (MSE), tính trên biến mục
-tiêu đã chuẩn hóa, làm hàm mất mát, cùng Adam optimizer với tốc độ học ban
-đầu $10^{-3}$. Để cải thiện khả năng hội tụ, ReduceLROnPlateau được áp dụng
-nhằm điều chỉnh tốc độ học dựa trên giá trị hàm mất mát trên tập đánh giá.
-Đồng thời, cơ chế dừng sớm được sử dụng để tránh quá khớp.
-
-Mô hình đạt giá trị hàm mất mát trên tập đánh giá (không gian đã chuẩn hóa)
-thấp nhất trong mỗi fold sẽ được lưu lại, cùng với lịch sử huấn luyện và các
-biểu đồ đánh giá. Các chỉ số MAE, RMSE và $R^{2}$ báo cáo ở
-Mục~\ref{sec:results} được tính theo các tiêu chí ở Mục~\ref{sec:metrics},
-sau khi biến đổi ngược dự đoán và nhãn thực về đơn vị nồng độ gốc để phản
-ánh đúng sai số thực tế thay vì sai số trên không gian đã chuẩn hóa.
+\textbf{Hiệu chỉnh theo prior thực phẩm (Bước 2).} Hình~\ref{fig:safety-heatmap}
+cho thấy phần lớn các cặp (thực phẩm, thuốc trừ sâu) gần như tất định trong
+dữ liệu hiện có -- không có mẫu nào nằm gần ranh giới MRL để mô hình học
+phân biệt từ phổ, nên một mô hình phổ thuần túy dễ khớp theo nhiễu thay vì
+một ranh giới quyết định thực sự tồn tại ở những cặp này. Vì thu thập thêm
+dữ liệu ở những cặp đó không khả thi trong phạm vi báo cáo này, xác suất dự
+đoán của Bước 2 (sau hiệu chỉnh Platt scaling) được trộn thêm với một
+\emph{prior} thực nghiệm theo riêng loại thực phẩm của mẫu, $p_f$ -- tỉ lệ
+Vượt ngưỡng làm mịn Beta(1,1) ước lượng trên chính tập huấn luyện của fold
+đó (không dùng tập kiểm tra, tránh rò rỉ thông tin):
+\begin{equation}
+\hat{p} = \alpha_f\, p_f + (1-\alpha_f)\, p_{\text{model}}, \quad
+\alpha_f = \mathrm{clip}\big(1 - 4\,p_f(1-p_f),\, 0,\, 1\big)
+\label{eq:food-shrinkage}
+\end{equation}
+với $p_{\text{model}}$ là xác suất mô hình đã hiệu chỉnh Platt scaling.
+Trọng số $\alpha_f$ được suy trực tiếp từ phương sai Bernoulli của $p_f$:
+bằng 1 khi loại thực phẩm đó gần như tất định ($p_f$ gần 0 hoặc 1, mọi mẫu
+lịch sử đều đồng thuận), khi đó $\hat p$ tin hoàn toàn vào $p_f$ thay vì để
+mô hình phổ tự suy luận trên dữ liệu vốn không hỗ trợ; bằng 0 khi $p_f$ gần
+0,5 (loại thực phẩm đó thực sự cân bằng), khi đó $\hat p$ tin hoàn toàn vào
+mô hình phổ, đúng nơi dữ liệu có tín hiệu để học. Đây là cách tận dụng tối
+đa thông tin đã có mà không cần thêm mẫu mới: mô hình chỉ tự tin dựa vào
+phổ ở những cặp thực sự có bằng chứng, còn lại quay về câu trả lời an toàn
+nhất mà dữ liệu lịch sử thể hiện. Ngưỡng quyết định theo Recall
+(Phương trình ở trên) được quét lại trên chính $\hat p$ của tập huấn luyện
+để nhất quán với xác suất cuối cùng dùng ở suy luận.
 
 %=====================================================================
 \section{Kết quả}
@@ -746,10 +1121,9 @@ sau khi biến đổi ngược dự đoán và nhãn thực về đơn vị nồ
 \subsection{Tiêu chí đánh giá}
 \label{sec:metrics}
 
-Hiệu năng mô hình được đánh giá bằng bộ chỉ số phù hợp với từng loại bài
-toán: phân loại (loại thực phẩm, Mục~\ref{sec:smartnir}; phát hiện thuốc trừ
-sâu, Mục~\ref{sec:xgboost}) và hồi quy (dự đoán nồng độ, Bước 2 của
-Mục~\ref{sec:xgboost}).
+Cả ba bài toán con -- phân loại thực phẩm, Bước 1 (Phát hiện) và Bước 2
+(Phân loại mức độ) -- đều là bài toán phân loại, nên dùng chung một bộ chỉ
+số đánh giá.
 
 \textbf{Chỉ số phân loại.} Gọi $C$ là số lớp; với mỗi lớp $c$, gọi $TP_c$,
 $FP_c$, $FN_c$ lần lượt là số mẫu dương thật, dương giả và âm giả của lớp đó
@@ -770,194 +1144,173 @@ F1_c = \frac{2 \cdot \mathrm{Precision}_c \cdot \mathrm{Recall}_c}{\mathrm{Preci
 F1 &= \frac{1}{C}\sum_{c=1}^{C}F1_c
 \label{eq:macro}
 \end{align}
-Với bài toán phát hiện thuốc trừ sâu (Bước 1, nhị phân), $C=2$.
+Với Bước 1 và Bước 2 (đều nhị phân), $C=2$.
 
-\textbf{Chỉ số bổ sung cho Bước 1.} Vì Bước 1 huấn luyện trên dữ liệu mất
-cân bằng với trọng số \texttt{scale\_pos\_weight} (Mục~\ref{sec:xgboost}),
-hai chỉ số bổ sung được theo dõi cùng Accuracy/Precision/Recall/F1: PR-AUC
-(diện tích dưới đường cong Precision-Recall khi quét ngưỡng phân loại), ít
-nhạy với mất cân bằng lớp hơn ROC-AUC; và Brier score -- sai số bình phương
-trung bình giữa xác suất dự đoán $\hat{p}_i$ và nhãn thực $l_i \in \{0,1\}$,
+\textbf{Chỉ số bổ sung cho Bước 1 và Bước 2.} Vì cả hai bước đều huấn luyện
+trên toàn bộ mẫu và đều mất cân bằng lớp -- lớp Vượt ngưỡng vốn đã là thiểu
+số ngay trong tập con đã phát hiện với một số thuốc trừ sâu
+(Bảng~\ref{tab:sub-safety}), lại càng nhỏ hơn khi tính trên toàn bộ mẫu của
+Bước 2 (Mục~\ref{sec:stage-training}) -- hai chỉ số bổ sung được theo dõi
+cùng Accuracy/Precision/Recall/F1: PR-AUC (diện tích dưới
+đường cong Precision-Recall khi quét ngưỡng phân loại), ít nhạy với mất cân
+bằng lớp hơn ROC-AUC; và Brier score -- sai số bình phương trung bình giữa
+xác suất dự đoán $\hat{p}_i$ và nhãn thực $l_i \in \{0,1\}$,
 $\mathrm{Brier} = \frac{1}{n}\sum_{i=1}^{n}(\hat{p}_i - l_i)^2$ -- đo chất
 lượng hiệu chỉnh xác suất, được báo cáo trước và sau bước Platt scaling để
-định lượng mức cải thiện.
-
-\textbf{Chỉ số hồi quy.} Với $n$ mẫu trong tập kiểm tra, $y_i$ và $\hat{y}_i$
-lần lượt là nồng độ thực và nồng độ dự đoán của mẫu $i$, và $\bar{y}$ là
-nồng độ thực trung bình trên tập kiểm tra, hiệu năng hồi quy được đo bằng
-MAE, RMSE và hệ số xác định $R^{2}$:
-\begin{align}
-\mathrm{MAE} &= \frac{1}{n}\sum_{i=1}^{n}\left|y_i - \hat{y}_i\right|, \notag\\
-\mathrm{RMSE} &= \sqrt{\frac{1}{n}\sum_{i=1}^{n}\left(y_i - \hat{y}_i\right)^2}, \notag\\
-R^{2} &= 1 - \frac{\sum_{i=1}^{n}\left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^{n}\left(y_i - \bar{y}\right)^2}
-\label{eq:regmetrics}
-\end{align}
-MAE và RMSE càng nhỏ và $R^{2}$ càng gần 1 thể hiện mô hình dự đoán nồng độ
-càng chính xác.
+định lượng mức cải thiện. Riêng Bước 2, Brier score còn được báo cáo thêm
+sau bước trộn với prior thực phẩm (Mục~\ref{sec:stage-training}, Phương
+trình~\ref{eq:food-shrinkage}) để định lượng mức cải thiện của kỹ thuật
+này so với chỉ hiệu chỉnh Platt scaling.
 
 \subsection{Máy FLAMENIR}
 
 \subsubsection{Phân loại rau củ quả}
+\label{sec:results-flamenir-clf}
 
 \begin{table}[htbp]
 \centering
-\caption{Kết quả phân loại rau củ quả -- máy FLAMENIR}
-\label{tab:flamenir-clf}
+\caption{Phân loại rau củ quả trên máy FLAMENIR (trung bình 5 fold, \%)}
+\label{tab:res-clf-flamenir}
 \footnotesize
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|r|r|r|r|}
 \hline
-\textbf{Fold} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Phương pháp} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
 \hline
-Fold 1 & 95,17\% & 94,79\% & 94,81\% & 94,80\% \\
-Fold 2 & 94,77\% & 94,33\% & 94,37\% & 94,35\% \\
-Fold 3 & 92,49\% & 91,86\% & 91,97\% & 91,89\% \\
-Fold 4 & 93,16\% & 92,59\% & 92,64\% & 92,60\% \\
-Fold 5 & 94,34\% & 93,91\% & 93,98\% & 93,94\% \\
-\hline
-\textbf{Trung bình} & \textbf{93,98$_{\pm 1,01}$\%} & \textbf{93,50$_{\pm 1,10}$\%} & \textbf{93,55$_{\pm 1,07}$\%} & \textbf{93,51$_{\pm 1,10}$\%} \\
-\hline
-\end{tabular}%
-}
-\end{table}
-
-Độ chính xác dao động từ 92,49\% (Fold 3) đến 95,17\% (Fold 1), chênh lệch
-khoảng 2,7 điểm \% giữa các fold -- mức dao động vừa phải, cho thấy mô hình
-khá ổn định qua các cách chia dữ liệu khác nhau. Precision và Recall luôn
-sát nhau ở mọi fold, phù hợp với việc dùng Focal Loss cùng trọng số theo tần
-suất lớp (Mục~\ref{sec:clf-training}) để cân bằng ảnh hưởng giữa 9 loại rau
-củ quả.
-
-\subsubsection{Dự đoán hàm lượng các thuốc trừ sâu có trong mẫu}
-
-\textbf{a/ Phát hiện thuốc trừ sâu}
-
-Ngưỡng quyết định (\texttt{threshold}) của mỗi fold được chọn tự động nhằm
-đạt Recall lớp dương $\geq 0{,}9$ với Precision cao nhất có thể, thay vì cố
-định ở 0,5 (chi tiết ở Mục~\ref{sec:stage-training}) -- phù hợp hơn với bài
-toán an toàn thực phẩm, nơi bỏ sót một mẫu có thuốc trừ sâu thật (false
-negative) nguy hiểm hơn một cảnh báo giả (false positive). Vì vậy Accuracy
-và F1 (theo macro-average, tính trên cả hai lớp) không còn là chỉ số chính
-để đánh giá -- PR-AUC (không phụ thuộc ngưỡng) phản ánh đúng hơn khả năng
-phân biệt của mô hình.
-
-\begin{table}[htbp]
-\centering
-\caption{Kết quả phát hiện thuốc trừ sâu (trung bình 5-fold) -- máy FLAMENIR}
-\label{tab:flamenir-detect}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{|l|c|c|c|c|c|c|}
-\hline
-\textbf{Thuốc trừ sâu} & \textbf{Ngưỡng} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{PR-AUC} \\
-\hline
-Thiamethoxam & 0,154 & 90,66\% & 71,52\% & 84,16\% & 75,80\% & 0,630 \\
-Permethrin & 0,105 & 72,84\% & 63,68\% & 75,55\% & 63,73\% & 0,482 \\
-Metalaxyl & 0,285 & 97,61\% & 74,66\% & 81,77\% & 77,73\% & 0,627 \\
-Azoxystrobin & 0,086 & 87,27\% & 65,97\% & 82,64\% & 69,95\% & 0,529 \\
-Imidaclopird & 0,117 & 83,60\% & 66,92\% & 80,21\% & 70,04\% & 0,521 \\
-Difenoconazole & 0,088 & 87,61\% & 66,20\% & 82,77\% & 70,27\% & 0,533 \\
-Cypermethrin & 0,129 & 88,29\% & 67,05\% & 82,31\% & 71,17\% & 0,521 \\
-Cyhalothrin & 0,814 & 99,21\% & 95,52\% & 82,27\% & 87,72\% & 0,868 \\
-Chlorantraniliprol & 0,678 & 99,29\% & 86,02\% & 70,08\% & 75,68\% & 0,571 \\
-Chlopyrifos Methyl & 0,935 & 99,70\% & 98,96\% & 86,97\% & 92,07\% & 0,953 \\
-Emamectin benzoate & 0,126 & 89,07\% & 67,77\% & 80,42\% & 71,66\% & 0,532 \\
-Chlorothalonil & 0,163 & 89,47\% & 70,47\% & 83,11\% & 74,57\% & 0,570 \\
-\rowcolor{red!12}Triadimefon & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-Cyantraniliprole & 0,091 & 88,94\% & 64,16\% & 79,99\% & 68,09\% & 0,455 \\
-\rowcolor{red!12}Flutolanil & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-Indoxacarb & 0,201 & 95,43\% & 71,88\% & 82,52\% & 75,98\% & 0,591 \\
-Abamectin & 0,088 & 89,74\% & 64,95\% & 78,61\% & 68,82\% & 0,481 \\
-\rowcolor{red!12}Propamocarb.HCL & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-Chlothianidin & 0,096 & 93,87\% & 67,23\% & 82,46\% & 72,03\% & 0,515 \\
-\hline
-\end{tabular}%
-}
-\end{table}
-
-\textit{Ghi chú: NaN ứng với các thuốc trừ sâu không có mẫu dương nào trong
-tập dữ liệu (cột FLAMENIR của Bảng \ref{tab:sub-counts}), nên không thể huấn
-luyện được mô hình phát hiện/hồi quy.}
-
-PR-AUC dao động khá rộng, từ 0,455 (Cyantraniliprole) đến 0,953 (Chlopyrifos
-Methyl). Các chất có PR-AUC cao nhất (Chlopyrifos Methyl 0,953; Cyhalothrin
-0,868) cũng là những chất được chọn ngưỡng quyết định cao hơn hẳn mức mặc
-định 0,5 (lần lượt 0,935 và 0,814) -- vì mô hình đã tách biệt tốt hai lớp
-ngay từ ngưỡng thấp, thuật toán có thể đẩy ngưỡng lên để tăng Precision mà
-vẫn giữ Recall $\geq 0{,}9$. Phần lớn các chất còn lại có PR-AUC quanh mức
-0,5--0,6 và ngưỡng thấp (0,08--0,2), đòi hỏi hạ ngưỡng sâu để đạt Recall mục
-tiêu, kéo theo Precision giảm còn khoảng 64--75\% -- phản ánh đúng bản chất
-khó của bài toán khi tín hiệu phổ NIR của các chất này chưa đủ đặc trưng để
-phân biệt rạch ròi ở độ phân giải 128 bước sóng của FLAMENIR. Một ngoại lệ
-đáng chú ý là Chlorantraniliprol: dù PR-AUC chỉ ở mức trung bình (0,571),
-chất này vẫn được chọn ngưỡng khá cao (0,678), cho thấy đường cong
-Precision-Recall của nó giữ Precision tốt cụ thể quanh điểm Recall $=0{,}9$
-dù PR-AUC tổng thể (lấy trung bình trên toàn miền Recall) không cao.
-
-\textbf{b/ Dự đoán hàm lượng}
-
-\begin{table}[htbp]
-\centering
-\caption{Kết quả dự đoán hàm lượng (trung bình 5-fold) -- máy FLAMENIR}
-\label{tab:flamenir-reg}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Thuốc trừ sâu} & \textbf{MSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$ (\%)} \\
-\hline
-Thiamethoxam & 0,027 & 4,834 & 27,021 & 85,15 \\
-Permethrin & 0,017 & 8,915 & 33,101 & 85,05 \\
-\rowcolor{yellow!30}Metalaxyl & 0,001 & 0,000 & 0,001 & 99,63 \\
-Azoxystrobin & 0,007 & 13,955 & 66,604 & 90,63 \\
-Imidaclopird & 0,028 & 1,081 & 2,936 & 83,44 \\
-Difenoconazole & 0,007 & 4,539 & 24,545 & 93,65 \\
-Cypermethrin & 0,013 & 0,064 & 0,203 & 92,93 \\
-\rowcolor{yellow!30}Cyhalothrin & 0,005 & 0,001 & 0,004 & 97,26 \\
-\rowcolor{yellow!30}Chlorantraniliprol & 0,013 & 0,000 & 0,001 & 93,61 \\
-\rowcolor{yellow!30}Chlopyrifos Methyl & 0,000 & 0,000 & 0,000 & 99,92 \\
-Emamectin benzoate & 0,021 & 0,318 & 0,905 & 85,43 \\
-Chlorothalonil & 0,015 & 401,527 & 1022,516 & 65,96 \\
-\rowcolor{red!12}Triadimefon & NaN & NaN & NaN & NaN \\
-Cyantraniliprole & 0,004 & 3,682 & 7,926 & 94,37 \\
-\rowcolor{red!12}Flutolanil & NaN & NaN & NaN & NaN \\
-Indoxacarb & 0,017 & 0,166 & 0,614 & 90,10 \\
-Abamectin & 0,011 & 0,359 & 0,784 & 90,84 \\
-\rowcolor{red!12}Propamocarb.HCL & NaN & NaN & NaN & NaN \\
-Chlothianidin & 0,022 & 4,988 & 23,219 & 86,40 \\
+XGBoost     & 80,55 & 79,06 & 79,21 & 78,90 \\
+LightGBM    & 82,50 & 81,15 & 81,24 & 81,03 \\
+SMART-NIR   & 89,64 & 88,86 & 88,89 & 88,86 \\
+GuidedDCNet & \textbf{91,96} & \textbf{91,36} & \textbf{91,34} & \textbf{91,34} \\
 \hline
 \end{tabular}
-
-\vspace{2pt}
-{\footnotesize \colorbox{yellow!30}{\rule{0pt}{6pt}\rule{6pt}{0pt}} các dòng
-tô vàng: chất chỉ có 2--3 mức nồng độ duy nhất trong toàn bộ tập dữ liệu
-(xem giải thích bên dưới), khiến MAE/RMSE thấp bất thường.}
 \end{table}
 
-Nhờ kiểm định chéo K-Fold phân tầng (Mục~\ref{sec:stage-training}) chia theo
-nhóm phân vị của nồng độ, 16/19 thuốc trừ sâu train được ở Bước 2, nhiều hơn
-4 chất (Metalaxyl, Cyhalothrin, Chlorantraniliprol, Chlopyrifos Methyl) so
-với trước đây; chỉ còn 3 chất không có mẫu dương nào (Triadimefon, Flutolanil,
-Propamocarb.HCL) là không thể huấn luyện. $R^{2}$ dao động từ 65,96\%
-(Chlorothalonil) đến 99,92\% (Chlopyrifos Methyl), trung bình khoảng 90\%.
-MAE và RMSE được báo cáo theo đơn vị nồng độ gốc (mg/kg, sau biến đổi
-ngược từ không gian log-chuẩn hóa, Mục~\ref{sec:stage2-preprocess}) nên
-chênh lệch lớn giữa các chất phản ánh đúng thang đo tự nhiên của từng chất
--- ví dụ Chlorothalonil có nồng độ dao động rất rộng (0,132--6.196 mg/kg
-trong tập dữ liệu), nên MAE tuyệt đối (401,527) lớn hơn nhiều so với Metalaxyl
-hay Cyhalothrin, vốn có nồng độ chỉ trong khoảng 0,03--0,09 mg/kg.
+Bảng~\ref{tab:res-clf-flamenir} cho thấy hai kiến trúc mạng nơ-ron sâu vượt
+trội rõ rệt so với hai mô hình cây trên bài toán phân loại 9 lớp:
+GuidedDCNet đạt Accuracy cao nhất (91,96\%), theo sau là SMART-NIR
+(89,64\%), cách biệt khoảng 9--11 điểm phần trăm so với LightGBM (82,50\%)
+và XGBoost (80,55\%) -- phương pháp yếu nhất. Precision, Recall và F1
+(macro-average) bám sát Accuracy ở cả bốn phương pháp, cho thấy không có
+lớp rau củ quả nào bị bỏ sót một cách bất thường dù phân bố mẫu giữa các
+lớp không hoàn toàn cân bằng (Bảng~\ref{tab:cat-counts}).
 
-Bốn chất tô vàng (Metalaxyl, Cyhalothrin, Chlorantraniliprol, Chlopyrifos
-Methyl) có MAE/RMSE gần 0 và $R^{2}$ trên 93\% -- cao bất thường so với các
-chất còn lại -- không phải vì mô hình dự đoán xuất sắc hơn, mà vì nhãn nồng
-độ của các chất này trong dữ liệu gốc chỉ nhận 2--3 giá trị cố định (ví dụ
-Metalaxyl chỉ có đúng hai mức 0,032 và 0,08 mg/kg trên toàn bộ hơn 4.000
-mẫu dương), thay vì biến thiên liên tục như Thiamethoxam (17 mức) hay
-Permethrin (20 mức). Khi đó bài toán hồi quy thực chất gần với phân loại
-rời rạc 2--3 lớp hơn là dự đoán một giá trị liên tục, nên sai số tuyệt đối
-tự nhiên thấp hơn hẳn và không phản ánh khả năng dự đoán nồng độ chi tiết
-của mô hình.
+\subsubsection{Đánh giá an toàn thuốc trừ sâu}
+\label{sec:results-flamenir-safety}
+
+\begin{table*}[htbp]
+\centering
+\caption{Bước 1 -- Phát hiện, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}
+\label{tab:res-stage1-flamenir}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|rrrrr|rrrrr|rrrrr|}
+\hline
+\multirow{2}{*}{\textbf{Thuốc trừ sâu}} & \multicolumn{5}{c|}{\textbf{XGBoost}} & \multicolumn{5}{c|}{\textbf{LightGBM}} & \multicolumn{5}{c|}{\textbf{SMART-NIR}} \\
+\cline{2-16}
+ & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC \\
+\hline
+Thiamethoxam & 71,78 & 73,69 & 75,15 & 71,62 & 74,39 & 71,71 & 73,63 & 75,09 & 71,56 & 74,33 & 91,69 & 90,88 & 91,36 & 91,11 & 96,14 \\
+Permethrin & 74,61 & 61,46 & 78,13 & 61,42 & 57,95 & 74,66 & 61,46 & 78,10 & 61,45 & 58,03 & 91,86 & 77,01 & 91,16 & 81,89 & 87,73 \\
+Metalaxyl & 90,13 & 61,00 & 81,16 & 64,85 & 44,91 & 90,55 & 61,33 & 80,86 & 65,29 & 45,33 & 95,05 & 70,97 & 92,56 & 77,45 & 82,59 \\
+Azoxystrobin & 83,07 & 68,43 & 83,95 & 71,63 & 67,53 & 83,64 & 68,84 & 84,08 & 72,19 & 68,06 & 98,29 & 96,85 & 94,63 & 95,70 & 97,66 \\
+Imidaclopird & 78,59 & 63,09 & 80,51 & 64,59 & 52,84 & 79,18 & 63,37 & 80,71 & 65,10 & 53,63 & 96,70 & 88,66 & 93,77 & 90,99 & 93,45 \\
+Difenoconazole & 83,80 & 68,90 & 84,03 & 72,29 & 67,88 & 84,13 & 69,19 & 84,22 & 72,65 & 68,27 & 98,30 & 96,63 & 94,86 & 95,72 & 97,52 \\
+Cypermethrin & 85,30 & 64,84 & 83,57 & 68,42 & 66,12 & 85,21 & 64,78 & 83,57 & 68,33 & 66,30 & 96,55 & 85,25 & 93,57 & 88,86 & 91,57 \\
+Cyhalothrin & 87,14 & 67,62 & 83,99 & 71,73 & 66,94 & 87,22 & 67,73 & 84,13 & 71,87 & 67,13 & 96,67 & 87,07 & 93,52 & 89,96 & 92,75 \\
+Chlorantraniliprol & 80,07 & 59,66 & 79,25 & 60,77 & 37,04 & 80,77 & 59,88 & 79,19 & 61,27 & 37,70 & 88,97 & 67,39 & 89,51 & 72,36 & 75,59 \\
+Chlopyrifos Methyl & 87,73 & 61,36 & 82,17 & 64,86 & 46,53 & 88,21 & 61,73 & 82,29 & 65,42 & 46,91 & 96,28 & 77,88 & 93,54 & 83,67 & 85,91 \\
+Emamectin benzoate & 73,95 & 64,63 & 78,19 & 64,88 & 59,65 & 74,21 & 64,73 & 78,26 & 65,09 & 59,78 & 94,61 & 87,00 & 92,53 & 89,46 & 92,61 \\
+Chlorothalonil & 67,73 & 63,92 & 74,10 & 61,95 & 58,50 & 68,28 & 64,10 & 74,34 & 62,39 & 58,98 & 90,30 & 81,86 & 90,19 & 85,02 & 90,14 \\
+Triadimefon & 92,19 & 61,84 & 81,76 & 66,22 & 43,84 & 92,25 & 61,80 & 81,22 & 66,13 & 43,40 & 97,09 & 76,18 & 93,91 & 82,52 & 87,01 \\
+Cyantraniliprole & 85,20 & 63,07 & 82,59 & 66,35 & 55,00 & 85,89 & 63,57 & 82,81 & 67,09 & 55,64 & 98,45 & 93,03 & 94,52 & 93,75 & 94,85 \\
+Flutolanil & 73,12 & 59,11 & 76,02 & 58,02 & 40,68 & 73,85 & 59,31 & 76,25 & 58,54 & 41,39 & 90,47 & 72,52 & 89,96 & 77,69 & 81,66 \\
+Indoxacarb & 95,83 & 71,74 & 85,99 & 76,85 & 64,80 & 95,98 & 72,30 & 85,94 & 77,29 & 65,31 & 96,86 & 76,38 & 93,85 & 82,64 & 86,21 \\
+Abamectin & 74,90 & 58,91 & 76,61 & 58,31 & 39,81 & 74,65 & 58,81 & 76,42 & 58,10 & 39,86 & 90,67 & 71,65 & 90,49 & 77,01 & 80,96 \\
+Propamocarb.HCL & 88,67 & 58,15 & 78,97 & 60,82 & 30,00 & 89,25 & 58,43 & 78,62 & 61,32 & 29,82 & 95,36 & 69,75 & 92,72 & 76,38 & 79,78 \\
+Chlothianidin & 75,56 & 64,68 & 79,15 & 65,46 & 61,58 & 75,70 & 64,74 & 79,19 & 65,57 & 61,69 & 95,75 & 88,98 & 93,36 & 90,99 & 93,68 \\
+\hline
+\textbf{Trung bình} & \textbf{81,55} & \textbf{64,00} & \textbf{80,28} & \textbf{65,84} & \textbf{54,53} & \textbf{81,86} & \textbf{64,20} & \textbf{80,28} & \textbf{66,14} & \textbf{54,82} & \textbf{94,73} & \textbf{81,89} & \textbf{92,63} & \textbf{85,43} & \textbf{88,83} \\
+\hline
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[htbp]
+\centering
+\caption{Bước 2 -- Phân loại mức độ, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}
+\label{tab:res-stage2-flamenir}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|rrrrr|rrrrr|rrrrr|}
+\hline
+\multirow{2}{*}{\textbf{Thuốc trừ sâu}} & \multicolumn{5}{c|}{\textbf{XGBoost}} & \multicolumn{5}{c|}{\textbf{LightGBM}} & \multicolumn{5}{c|}{\textbf{SMART-NIR}} \\
+\cline{2-16}
+ & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC \\
+\hline
+Thiamethoxam & 73,09 & 72,91 & 77,05 & 71,97 & 70,13 & 73,08 & 72,91 & 77,04 & 71,96 & 70,14 & 91,82 & 89,87 & 91,28 & 90,52 & 93,95 \\
+Permethrin & 70,06 & 58,81 & 75,95 & 56,41 & 55,70 & 70,16 & 58,85 & 76,06 & 56,50 & 55,87 & 90,44 & 72,88 & 90,42 & 78,08 & 81,57 \\
+Metalaxyl & 74,63 & 53,96 & 74,31 & 50,63 & 30,15 & 75,58 & 54,03 & 74,04 & 51,09 & 30,63 & 79,91 & 56,48 & 84,87 & 55,83 & 72,18 \\
+Azoxystrobin & 89,62 & 63,77 & 86,97 & 68,36 & 54,82 & 90,28 & 64,38 & 86,75 & 69,18 & 56,18 & 98,03 & 86,23 & 94,28 & 89,80 & 88,36 \\
+Imidaclopird & 66,66 & 55,84 & 75,68 & 50,61 & 33,40 & 71,86 & 56,80 & 77,98 & 53,96 & 34,08 & 96,21 & 80,17 & 93,41 & 85,35 & 83,26 \\
+Difenoconazole & 83,17 & 66,93 & 83,87 & 70,14 & 64,15 & 83,31 & 67,05 & 84,02 & 70,31 & 64,46 & 98,02 & 94,66 & 94,41 & 94,53 & 93,86 \\
+Cypermethrin & 84,74 & 62,65 & 83,08 & 65,76 & 60,72 & 85,37 & 63,07 & 83,24 & 66,41 & 60,94 & 96,50 & 82,93 & 93,43 & 87,29 & 86,43 \\
+Cyhalothrin & 88,48 & 63,80 & 82,52 & 67,86 & 44,86 & 88,83 & 64,16 & 82,67 & 68,33 & 45,32 & 95,50 & 77,67 & 92,79 & 83,23 & 82,54 \\
+Chlorantraniliprol & 88,75 & 60,18 & 82,95 & 63,62 & 37,46 & 89,81 & 60,97 & 82,78 & 64,83 & 38,93 & 93,18 & 66,85 & 91,22 & 72,81 & 72,27 \\
+Chlopyrifos Methyl & 66,23 & 53,97 & 72,55 & 47,73 & 28,78 & 67,58 & 54,13 & 72,97 & 48,49 & 28,79 & 88,32 & 63,78 & 89,18 & 67,57 & 74,06 \\
+Emamectin benzoate & 63,96 & 60,72 & 73,35 & 56,50 & 56,10 & 64,32 & 60,79 & 73,46 & 56,76 & 56,22 & 93,19 & 83,34 & 91,66 & 86,76 & 88,99 \\
+Chlorothalonil & 69,19 & 59,73 & 74,91 & 57,47 & 35,89 & 70,01 & 59,95 & 75,22 & 58,06 & 36,23 & 87,84 & 71,94 & 88,89 & 76,49 & 77,70 \\
+Triadimefon & 83,80 & 56,25 & 79,60 & 56,89 & 26,92 & 84,04 & 56,27 & 79,31 & 57,00 & 26,32 & 87,51 & 59,36 & 88,74 & 62,32 & 75,22 \\
+Cyantraniliprole & 85,53 & 59,08 & 81,05 & 61,40 & 36,34 & 86,74 & 59,76 & 81,25 & 62,58 & 36,97 & 97,90 & 84,61 & 94,06 & 88,67 & 84,75 \\
+Flutolanil & 70,30 & 58,37 & 75,02 & 56,04 & 37,05 & 71,27 & 58,63 & 75,46 & 56,73 & 37,50 & 89,57 & 71,45 & 89,28 & 76,39 & 76,99 \\
+Indoxacarb & 97,20 & 73,27 & 86,06 & 78,15 & 62,99 & 97,39 & 74,46 & 86,04 & 79,04 & 64,37 & 97,93 & 78,13 & 94,18 & 84,15 & 84,65 \\
+Abamectin & 69,62 & 57,27 & 74,64 & 54,21 & 37,29 & 70,74 & 57,43 & 74,76 & 54,87 & 37,80 & 90,29 & 70,51 & 89,90 & 75,79 & 78,00 \\
+Propamocarb.HCL & 93,00 & 57,75 & 78,41 & 61,10 & 22,54 & 94,03 & 58,80 & 77,76 & 62,58 & 23,39 & 88,96 & 57,24 & 89,52 & 59,53 & 72,38 \\
+Chlothianidin & 47,95 & 57,56 & 66,40 & 44,34 & 58,31 & 47,90 & 57,58 & 66,43 & 44,31 & 58,46 & 94,46 & 85,34 & 92,50 & 88,42 & 90,18 \\
+\hline
+\textbf{Trung bình} & \textbf{77,16} & \textbf{60,67} & \textbf{78,12} & \textbf{59,96} & \textbf{44,93} & \textbf{78,02} & \textbf{61,05} & \textbf{78,28} & \textbf{60,68} & \textbf{45,40} & \textbf{92,40} & \textbf{75,44} & \textbf{91,26} & \textbf{79,13} & \textbf{81,97} \\
+\hline
+\end{tabular}%
+}
+\end{table*}
+
+Ở Bước 1 (Bảng~\ref{tab:res-stage1-flamenir}), SMART-NIR vượt trội rõ rệt so
+với XGBoost và LightGBM trên mọi chỉ số, đặc biệt PR-AUC (88,83\% so với
+khoảng 54--55\%) -- phù hợp quan sát ở Mục~\ref{sec:overview-stats} rằng cây
+quyết định khó tách được tín hiệu thuốc trừ sâu yếu khỏi phổ NIR nếu chỉ
+dựa vào các nhát cắt theo từng đặc trưng đơn lẻ. Recall macro của cả ba
+phương pháp đều trên 80\%, phản ánh đúng chủ đích chọn ngưỡng ưu tiên Recall
+$\geq 90\%$ cho riêng lớp dương (Mục~\ref{sec:stage-training}) -- Accuracy
+và F1 (macro, chịu ảnh hưởng của cả hai lớp) vì vậy thấp hơn PR-AUC (không
+phụ thuộc ngưỡng) một cách có chủ đích, không phải dấu hiệu mô hình kém.
+
+Ở Bước 2 (Bảng~\ref{tab:res-stage2-flamenir}), thứ hạng giữa các phương
+pháp giữ nguyên như Bước 1: SMART-NIR dẫn đầu (PR-AUC 81,97\%), XGBoost và
+LightGBM thấp hơn nhiều và gần như ngang nhau (44,93\% và 45,40\%). Đúng
+như dự đoán ở Mục~\ref{sec:stage-training}, bài toán Bước 2 khó hơn Bước 1
+(nhãn phụ thuộc thêm vào MRL của từng loại thực phẩm), nên PR-AUC nhìn
+chung thấp hơn bảng tương ứng của Bước 1 với cùng phương pháp. Riêng Brier
+score sau bước trộn prior thực phẩm
+(Phương trình~\ref{eq:food-shrinkage}) lại \emph{cao hơn} (kém hơn) Brier
+score chỉ sau Platt scaling ở cả XGBoost (5,30\% so với 4,75\%) lẫn
+SMART-NIR (3,74\% so với 2,04\%) khi gộp trung bình 19 thuốc -- ngược với
+kỳ vọng ban đầu của kỹ thuật này. Nguyên nhân nhiều khả năng là dù phần lớn
+cặp (thực phẩm, thuốc trừ sâu) hưởng lợi từ việc trộn với prior gần như tất
+định (Hình~\ref{fig:safety-heatmap}), một số cặp khác có prior ước lượng
+trên fold huấn luyện lệch so với tập kiểm tra, kéo trung bình chung lên;
+đây là một phát hiện thực nghiệm cần diễn giải thận trọng hơn giả định ban
+đầu, không loại trừ khả năng kỹ thuật này vẫn có ích cho việc chọn ngưỡng
+theo Recall dù không cải thiện Brier score trung bình.
+
+\textbf{Đánh giá trên tập kiểm tra độc lập.} Ngoài kiểm định chéo K-Fold,
+Bước 1 còn được đánh giá thêm trên 100 mẫu mỗi máy tách riêng trước khi
+huấn luyện (không tham gia bất kỳ fold nào). Trên FLAMENIR, Accuracy/Recall/PR-AUC
+(gộp dự đoán của 5 mô hình theo fold bằng trung bình xác suất) lần lượt là
+78,89\%/77,42\%/52,16\% với XGBoost, 78,95\%/78,17\%/51,36\% với LightGBM
+và 93,53\%/92,72\%/90,23\% với SMART-NIR -- gần như trùng khớp với kết quả
+kiểm định chéo ở Bảng~\ref{tab:res-stage1-flamenir} (chênh lệch dưới 3 điểm
+phần trăm ở mọi chỉ số), cho thấy các con số kiểm định chéo phản ánh khá
+tốt hiệu năng trên mẫu chưa từng thấy trong huấn luyện.
 
 \subsection{Máy OCEANFX}
 
@@ -965,161 +1318,123 @@ của mô hình.
 
 \begin{table}[htbp]
 \centering
-\caption{Kết quả phân loại rau củ quả -- máy OCEANFX}
-\label{tab:oceanfx-clf}
+\caption{Phân loại rau củ quả trên máy OCEANFX (trung bình 5 fold, \%)}
+\label{tab:res-clf-oceanfx}
 \footnotesize
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|r|r|r|r|}
 \hline
-\textbf{Fold} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Phương pháp} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
 \hline
-Fold 1 & 97,74\% & 97,73\% & 97,71\% & 97,72\% \\
-Fold 2 & 96,62\% & 96,37\% & 96,69\% & 96,52\% \\
-Fold 3 & 96,68\% & 96,75\% & 96,64\% & 96,69\% \\
-Fold 4 & 94,55\% & 94,67\% & 94,37\% & 94,51\% \\
-Fold 5 & 94,59\% & 94,39\% & 94,73\% & 94,53\% \\
-\hline
-\textbf{Trung bình} & \textbf{96,04$_{\pm 1,26}$\%} & \textbf{95,98$_{\pm 1,27}$\%} & \textbf{96,03$_{\pm 1,27}$\%} & \textbf{95,99$_{\pm 1,27}$\%} \\
-\hline
-\end{tabular}%
-}
-\end{table}
-
-Độ chính xác trung bình của OCEANFX (96,04\%) cao hơn FLAMENIR (93,98\%,
-Bảng~\ref{tab:flamenir-clf}) khoảng 2 điểm \%, phù hợp với việc OCEANFX có
-độ phân giải phổ cao hơn nhiều (2.136 so với 128 điểm bước sóng), cung cấp
-nhiều đặc trưng phân biệt hơn cho bài toán phân loại. Tuy nhiên độ dao động
-giữa các fold lại lớn hơn FLAMENIR (từ 94,55\% đến 97,74\%, chênh khoảng 3,2
-điểm \%), có thể do một số loại rau củ quả vốn đã ít mẫu trên OCEANFX (Xà
-Lách, Cà Rốt -- xem Bảng~\ref{tab:cat-counts}) phân bố không đều giữa các
-fold, khiến vài fold khó hơn hẳn các fold còn lại.
-
-\subsubsection{Dự đoán hàm lượng các thuốc trừ sâu có trong mẫu}
-
-\textbf{a/ Phát hiện thuốc trừ sâu}
-
-\begin{table}[htbp]
-\centering
-\caption{Kết quả phát hiện thuốc trừ sâu (trung bình 5-fold) -- máy OCEANFX}
-\label{tab:oceanfx-detect}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{|l|c|c|c|c|c|c|}
-\hline
-\textbf{Thuốc trừ sâu} & \textbf{Ngưỡng} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{PR-AUC} \\
-\hline
-Thiamethoxam & 0,497 & 95,48\% & 87,01\% & 86,90\% & 86,95\% & 0,862 \\
-Permethrin & 0,219 & 82,47\% & 74,52\% & 81,36\% & 76,66\% & 0,727 \\
-Metalaxyl & 0,554 & 98,42\% & 89,25\% & 86,67\% & 87,90\% & 0,856 \\
-Azoxystrobin & 0,469 & 95,67\% & 85,91\% & 86,07\% & 85,99\% & 0,833 \\
-Imidaclopird & 0,320 & 96,78\% & 75,97\% & 80,83\% & 78,17\% & 0,590 \\
-Difenoconazole & 0,437 & 95,46\% & 84,84\% & 85,08\% & 84,96\% & 0,809 \\
-Cypermethrin & 0,316 & 94,49\% & 84,00\% & 87,65\% & 85,69\% & 0,819 \\
-Cyhalothrin & 0,901 & 98,47\% & 97,92\% & 83,52\% & 89,33\% & 0,940 \\
-Chlorantraniliprol & 0,819 & 98,93\% & 95,12\% & 79,50\% & 85,59\% & 0,845 \\
-Chlopyrifos Methyl & 0,994 & 99,89\% & 99,93\% & 98,20\% & 99,05\% & 0,999 \\
-Emamectin benzoate & 0,977 & 99,87\% & 99,93\% & 91,86\% & 95,53\% & 0,988 \\
-Chlorothalonil & 0,466 & 96,34\% & 86,15\% & 83,28\% & 84,64\% & 0,798 \\
-\rowcolor{red!12}Triadimefon & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-\rowcolor{red!12}Cyantraniliprole & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-\rowcolor{red!12}Flutolanil & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-Indoxacarb & 0,483 & 96,83\% & 83,33\% & 80,99\% & 82,10\% & 0,727 \\
-Abamectin & 0,946 & 98,83\% & 98,70\% & 90,07\% & 93,91\% & 0,969 \\
-\rowcolor{red!12}Propamocarb.HCL & \multicolumn{6}{c|}{NaN (0 mẫu dương)} \\
-Chlothianidin & 0,526 & 96,95\% & 83,73\% & 82,34\% & 83,02\% & 0,763 \\
-\hline
-\end{tabular}%
-}
-\end{table}
-
-\textit{Ghi chú: NaN ứng với các thuốc trừ sâu không có mẫu dương nào trong
-tập dữ liệu (cột OCEANFX của Bảng \ref{tab:sub-counts}), nên không thể huấn
-luyện được mô hình phát hiện/hồi quy. Ngưỡng quyết định được chọn theo cùng
-tiêu chí Recall mục tiêu $\geq 0{,}9$ mô tả ở Mục~\ref{sec:stage-training}.}
-
-So với FLAMENIR, PR-AUC của OCEANFX cao hơn ở toàn bộ 15 thuốc trừ sâu train
-được trên cả hai máy (16 chất của FLAMENIR trừ Cyantraniliprole, chất duy
-nhất không train được trên OCEANFX), mức tăng trung bình khoảng 0,24 (ví dụ
-Azoxystrobin từ 0,529 lên 0,833; Cypermethrin từ 0,521 lên 0,819; mức tăng
-lớn nhất thuộc về Abamectin, từ 0,481 lên 0,969, và Emamectin benzoate, từ
-0,532 lên 0,988). Đây là bằng chứng nhất quán cho thấy độ phân giải phổ cao
-hơn của OCEANFX mang lại lợi ích rõ rệt cho cả bài toán phân loại lẫn phát
-hiện thuốc trừ sâu, không chỉ riêng một tác vụ. Đặc biệt Chlopyrifos Methyl
-(PR-AUC 0,999) và Emamectin benzoate (0,988) gần như phân biệt hoàn hảo hai
-lớp trên máy này, phản ánh qua ngưỡng quyết định rất cao (0,994 và 0,977)
-mà vẫn giữ được Recall trên 91\%.
-
-\textbf{b/ Dự đoán hàm lượng}
-
-\begin{table}[htbp]
-\centering
-\caption{Kết quả dự đoán hàm lượng (trung bình 5-fold) -- máy OCEANFX}
-\label{tab:oceanfx-reg}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Thuốc trừ sâu} & \textbf{MSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$ (\%)} \\
-\hline
-Thiamethoxam & 0,019 & 3,299 & 19,236 & 93,86 \\
-Permethrin & 0,006 & 8,029 & 27,778 & 90,90 \\
-\rowcolor{yellow!30}Metalaxyl & 0,000 & 0,000 & 0,001 & 99,75 \\
-Azoxystrobin & 0,007 & 9,600 & 51,717 & 94,21 \\
-\rowcolor{yellow!30}Imidaclopird & 0,020 & 0,000 & 0,001 & 90,07 \\
-Difenoconazole & 0,010 & 6,002 & 30,020 & 92,25 \\
-Cypermethrin & 0,043 & 0,140 & 0,312 & 79,26 \\
-\rowcolor{yellow!30}Cyhalothrin & 0,006 & 0,001 & 0,005 & 97,12 \\
-\rowcolor{yellow!30}Chlorantraniliprol & 0,037 & 0,001 & 0,002 & 81,52 \\
-\rowcolor{yellow!30}Chlopyrifos Methyl & 0,000 & 0,000 & 0,000 & 99,88 \\
-\rowcolor{red!12}Emamectin benzoate & NaN & NaN & NaN & NaN \\
-Chlorothalonil & 0,010 & 0,346 & 1,145 & 92,65 \\
-\rowcolor{red!12}Triadimefon & NaN & NaN & NaN & NaN \\
-\rowcolor{red!12}Cyantraniliprole & NaN & NaN & NaN & NaN \\
-\rowcolor{red!12}Flutolanil & NaN & NaN & NaN & NaN \\
-Indoxacarb & 0,010 & 0,132 & 0,549 & 93,96 \\
-Abamectin & 0,013 & 0,277 & 0,889 & 91,32 \\
-\rowcolor{red!12}Propamocarb.HCL & NaN & NaN & NaN & NaN \\
-Chlothianidin & 0,007 & 3,322 & 13,428 & 96,51 \\
+XGBoost     & 88,33 & 88,10 & 88,10 & 88,05 \\
+LightGBM    & 90,11 & 89,94 & 89,91 & 89,90 \\
+SMART-NIR   & 96,79 & 96,70 & 96,75 & 96,72 \\
+GuidedDCNet & \textbf{97,84} & \textbf{97,80} & \textbf{97,79} & \textbf{97,79} \\
 \hline
 \end{tabular}
-
-\vspace{2pt}
-{\footnotesize \colorbox{yellow!30}{\rule{0pt}{6pt}\rule{6pt}{0pt}} các dòng
-tô vàng: chất chỉ có 2--3 mức nồng độ duy nhất trong toàn bộ tập dữ liệu,
-khiến MAE/RMSE thấp bất thường (xem giải thích ở Bảng~\ref{tab:flamenir-reg}).}
 \end{table}
 
-\textit{Ghi chú: NaN của Triadimefon, Cyantraniliprole, Flutolanil,
-Propamocarb.HCL do không có mẫu dương nào (như ở Bảng~\ref{tab:oceanfx-detect});
-riêng Emamectin benzoate là trường hợp khác -- toàn bộ 1.032 mẫu dương đều
-có cùng một giá trị nồng độ duy nhất (0,007 mg/kg), nên không đủ biến thiên
-để huấn luyện mô hình hồi quy.}
+Bảng~\ref{tab:res-clf-oceanfx} cho thứ hạng giữa bốn phương pháp giống hệt
+FLAMENIR (Bảng~\ref{tab:res-clf-flamenir}) -- GuidedDCNet và SMART-NIR vượt
+trội hai mô hình cây -- với Accuracy của cả bốn phương pháp trên OCEANFX
+đều nằm trong khoảng 88,33\%--97,84\%, cao hơn khoảng tương ứng trên
+FLAMENIR (80,55\%--91,96\%). Khoảng cách giữa bốn phương pháp trên OCEANFX
+cũng hẹp hơn FLAMENIR, nhất quán với độ phân giải phổ cao hơn nhiều của máy
+này (2.136 so với 128 điểm bước sóng, Bảng~\ref{tab:overview-stats}) cung
+cấp nhiều đặc trưng phân biệt hơn cho cả cây quyết định lẫn mạng nơ-ron,
+thu hẹp phần lợi thế kiến trúc của SMART-NIR/GuidedDCNet.
 
-Bốn chất Metalaxyl, Cyhalothrin, Chlorantraniliprol, Chlopyrifos Methyl tiếp
-tục là các trường hợp nhãn nồng độ gần như rời rạc (2--3 mức) đã nêu ở
-Bảng~\ref{tab:flamenir-reg}, nên MAE/RMSE thấp bất thường trên cả hai máy.
-Riêng Imidaclopird chỉ bất thường trên OCEANFX: trong khi trên FLAMENIR chất
-này có 12 mức nồng độ trải rộng 0,017--27,4 mg/kg (MAE bình thường, 1,081),
-tập mẫu OCEANFX của Imidaclopird tình cờ chỉ chứa 3 mức nồng độ hẹp
-(0,017--0,024 mg/kg), khiến MAE gần như bằng 0 (0,000) dù cùng một chất,
-cùng một mô hình -- minh chứng rõ ràng rằng MAE thấp phản ánh đặc điểm rời
-rạc của nhãn trong từng tập dữ liệu cụ thể, không phải sự khác biệt về khả
-năng của mô hình giữa hai máy.
+\subsubsection{Đánh giá an toàn thuốc trừ sâu}
 
-14/19 thuốc trừ sâu train được ở Bước 2 trên OCEANFX (thiếu Emamectin
-benzoate và Cyantraniliprole so với FLAMENIR). So với FLAMENIR, kết quả trên
-OCEANFX không đồng loạt tốt hơn như ở bài toán phát hiện (Bảng~\ref{tab:flamenir-detect}
-so với Bảng~\ref{tab:oceanfx-detect}): 9/14 chất chung có $R^{2}$ cao hơn
-trên OCEANFX (đáng chú ý nhất là Chlorothalonil, tăng từ 65,96\% lên
-92,65\%, và Chlothianidin, từ 86,40\% lên 96,51\%), nhưng 5 chất còn lại lại
-giảm, rõ nhất là Cypermethrin (92,93\% xuống 79,26\%) và Chlorantraniliprol
-(93,61\% xuống 81,52\%). Mức tăng trung bình qua 14 chất chỉ khoảng 2,8
-điểm \%, cho thấy độ phân giải phổ cao hơn của OCEANFX không mang lại lợi
-ích rõ rệt và nhất quán cho bài toán hồi quy nồng độ như đã thấy ở bài toán
-phân loại và phát hiện. Lưu ý mức tăng của riêng Imidaclopird (83,44\% lên
-90,07\%) trong so sánh này không hoàn toàn công bằng, vì một phần đến từ
-đặc điểm nhãn rời rạc trên OCEANFX vừa nêu trên, chứ không thuần túy do độ
-phân giải phổ.
+\begin{table*}[htbp]
+\centering
+\caption{Bước 1 -- Phát hiện, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}
+\label{tab:res-stage1-oceanfx}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|rrrrr|rrrrr|rrrrr|}
+\hline
+\multirow{2}{*}{\textbf{Thuốc trừ sâu}} & \multicolumn{5}{c|}{\textbf{XGBoost}} & \multicolumn{5}{c|}{\textbf{LightGBM}} & \multicolumn{5}{c|}{\textbf{SMART-NIR}} \\
+\cline{2-16}
+ & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC \\
+\hline
+Thiamethoxam & 80,09 & 64,83 & 81,37 & 67,01 & 58,40 & 80,21 & 64,89 & 81,38 & 67,12 & 58,82 & 88,50 & 72,99 & 89,19 & 77,56 & 83,04 \\
+Permethrin & 78,10 & 68,12 & 81,05 & 69,83 & 60,71 & 78,50 & 68,36 & 81,22 & 70,19 & 61,33 & 96,64 & 93,12 & 93,91 & 93,51 & 95,70 \\
+Metalaxyl & 80,92 & 63,10 & 81,80 & 65,26 & 62,75 & 80,75 & 63,04 & 81,83 & 65,14 & 63,12 & 85,98 & 67,60 & 87,54 & 71,69 & 81,47 \\
+Azoxystrobin & 93,59 & 85,34 & 90,38 & 87,59 & 87,82 & 93,78 & 85,79 & 90,45 & 87,89 & 88,03 & 98,46 & 98,78 & 94,80 & 96,67 & 99,33 \\
+Imidaclopird & 89,98 & 72,65 & 87,36 & 77,29 & 70,69 & 90,18 & 72,94 & 87,39 & 77,58 & 71,27 & 97,94 & 93,28 & 94,38 & 93,82 & 94,73 \\
+Difenoconazole & 93,66 & 85,40 & 90,48 & 87,67 & 87,90 & 93,73 & 85,58 & 90,46 & 87,77 & 88,10 & 98,53 & 98,78 & 95,06 & 96,81 & 99,31 \\
+Cypermethrin & 75,31 & 70,16 & 79,23 & 70,76 & 72,45 & 75,34 & 70,21 & 79,32 & 70,81 & 72,42 & 92,10 & 86,79 & 91,38 & 88,77 & 93,09 \\
+Cyhalothrin & 83,54 & 66,58 & 83,19 & 69,84 & 58,35 & 83,92 & 66,86 & 83,28 & 70,23 & 58,97 & 95,03 & 83,88 & 92,79 & 87,60 & 90,44 \\
+Chlorantraniliprol & 85,10 & 62,32 & 82,34 & 65,44 & 48,46 & 85,06 & 62,25 & 82,16 & 65,34 & 48,52 & 85,01 & 63,44 & 87,18 & 66,83 & 66,02 \\
+Chlopyrifos Methyl & 98,86 & 92,79 & 91,64 & 92,20 & 92,26 & 98,93 & 93,78 & 91,49 & 92,60 & 92,66 & 99,44 & 97,43 & 94,80 & 96,07 & 96,65 \\
+Emamectin benzoate & 75,10 & 69,27 & 79,28 & 69,87 & 68,79 & 75,04 & 69,28 & 79,34 & 69,84 & 68,93 & 89,08 & 81,72 & 89,37 & 84,54 & 89,19 \\
+Chlorothalonil & 70,43 & 66,73 & 76,59 & 65,64 & 67,78 & 70,44 & 66,72 & 76,56 & 65,65 & 67,77 & 92,54 & 86,63 & 91,54 & 88,75 & 92,65 \\
+Triadimefon & 96,81 & 72,23 & 85,78 & 77,25 & 68,05 & 97,18 & 74,21 & 85,32 & 78,62 & 69,06 & 98,18 & 80,78 & 94,29 & 86,18 & 89,97 \\
+Cyantraniliprole & 91,23 & 72,03 & 87,67 & 76,99 & 71,09 & 91,22 & 72,00 & 87,57 & 76,94 & 71,22 & 97,92 & 91,30 & 94,49 & 92,81 & 93,80 \\
+Flutolanil & 96,93 & 74,18 & 86,95 & 79,08 & 71,53 & 96,99 & 74,49 & 86,52 & 79,18 & 71,75 & 98,52 & 84,85 & 94,09 & 88,82 & 90,94 \\
+Indoxacarb & 95,79 & 67,31 & 84,59 & 72,70 & 54,18 & 95,74 & 67,05 & 84,01 & 72,35 & 54,05 & 98,80 & 86,01 & 94,40 & 89,63 & 90,03 \\
+Abamectin & 78,93 & 63,24 & 80,21 & 64,89 & 58,79 & 79,02 & 63,27 & 80,21 & 64,95 & 58,87 & 86,22 & 69,82 & 88,03 & 73,93 & 82,61 \\
+Propamocarb.HCL & 94,02 & 64,35 & 84,21 & 69,51 & 54,83 & 94,92 & 66,19 & 83,47 & 71,35 & 56,67 & 99,01 & 89,81 & 94,33 & 91,90 & 92,40 \\
+Chlothianidin & 75,56 & 71,95 & 79,52 & 72,33 & 78,13 & 75,48 & 71,91 & 79,50 & 72,26 & 78,17 & 92,59 & 88,84 & 91,74 & 90,15 & 94,25 \\
+\hline
+\textbf{Trung bình} & \textbf{86,00} & \textbf{71,19} & \textbf{83,88} & \textbf{73,75} & \textbf{68,05} & \textbf{86,13} & \textbf{71,52} & \textbf{83,76} & \textbf{73,99} & \textbf{68,41} & \textbf{94,24} & \textbf{85,05} & \textbf{92,28} & \textbf{87,16} & \textbf{90,30} \\
+\hline
+\end{tabular}%
+}
+\end{table*}
 
+\begin{table*}[htbp]
+\centering
+\caption{Bước 2 -- Phân loại mức độ, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}
+\label{tab:res-stage2-oceanfx}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|rrrrr|rrrrr|rrrrr|}
+\hline
+\multirow{2}{*}{\textbf{Thuốc trừ sâu}} & \multicolumn{5}{c|}{\textbf{XGBoost}} & \multicolumn{5}{c|}{\textbf{LightGBM}} & \multicolumn{5}{c|}{\textbf{SMART-NIR}} \\
+\cline{2-16}
+ & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC & Acc. & Prec. & Rec. & F1 & PR-AUC \\
+\hline
+Thiamethoxam & 77,26 & 61,07 & 79,61 & 61,73 & 42,22 & 77,86 & 61,32 & 79,86 & 62,23 & 42,46 & 85,39 & 67,10 & 87,67 & 71,02 & 70,40 \\
+Permethrin & 76,95 & 63,45 & 79,96 & 64,50 & 50,13 & 77,31 & 63,66 & 80,24 & 64,85 & 50,76 & 94,28 & 82,97 & 92,44 & 86,84 & 85,93 \\
+Metalaxyl & 77,75 & 60,34 & 80,36 & 60,90 & 54,80 & 78,74 & 60,74 & 80,74 & 61,72 & 55,13 & 81,83 & 63,21 & 85,39 & 65,57 & 75,66 \\
+Azoxystrobin & 96,58 & 80,83 & 90,29 & 84,82 & 76,93 & 96,68 & 81,34 & 90,17 & 85,11 & 77,65 & 99,17 & 96,57 & 94,82 & 95,67 & 93,95 \\
+Imidaclopird & 82,43 & 60,50 & 83,50 & 62,43 & 57,34 & 82,85 & 60,71 & 83,70 & 62,83 & 57,33 & 96,99 & 83,61 & 93,72 & 87,78 & 84,87 \\
+Difenoconazole & 94,28 & 85,57 & 90,59 & 87,83 & 84,20 & 94,31 & 85,62 & 90,65 & 87,88 & 84,38 & 98,69 & 98,91 & 95,09 & 96,89 & 96,50 \\
+Cypermethrin & 76,52 & 68,70 & 80,04 & 69,86 & 67,01 & 76,58 & 68,76 & 80,12 & 69,93 & 67,40 & 91,72 & 84,15 & 91,04 & 86,94 & 90,13 \\
+Cyhalothrin & 82,20 & 61,96 & 82,80 & 64,24 & 38,78 & 83,33 & 62,54 & 83,02 & 65,26 & 39,54 & 92,28 & 72,92 & 91,24 & 78,54 & 73,13 \\
+Chlorantraniliprol & 94,97 & 68,52 & 85,80 & 73,96 & 52,32 & 95,39 & 69,73 & 85,76 & 75,07 & 53,78 & 95,16 & 70,06 & 92,63 & 76,62 & 73,31 \\
+Chlopyrifos Methyl & 98,89 & 90,82 & 90,85 & 90,83 & 83,79 & 98,89 & 90,88 & 90,82 & 90,85 & 83,53 & 99,41 & 95,53 & 94,70 & 95,10 & 92,14 \\
+Emamectin benzoate & 73,72 & 68,21 & 78,56 & 68,36 & 65,69 & 73,65 & 68,20 & 78,57 & 68,32 & 65,85 & 87,39 & 79,36 & 88,42 & 82,36 & 87,36 \\
+Chlorothalonil & 75,26 & 61,74 & 78,43 & 61,98 & 47,08 & 76,19 & 62,11 & 78,77 & 62,73 & 47,85 & 85,53 & 69,13 & 87,34 & 73,14 & 76,83 \\
+Triadimefon & 87,25 & 57,23 & 83,10 & 59,21 & 46,19 & 91,69 & 62,10 & 84,83 & 66,18 & 47,91 & 95,87 & 74,31 & 92,95 & 79,53 & 82,45 \\
+Cyantraniliprole & 92,82 & 67,30 & 86,78 & 72,69 & 48,14 & 93,10 & 67,78 & 86,68 & 73,19 & 47,72 & 97,12 & 80,65 & 93,86 & 85,88 & 81,35 \\
+Flutolanil & 96,75 & 73,28 & 86,93 & 78,38 & 58,35 & 96,80 & 73,49 & 86,59 & 78,44 & 58,35 & 98,39 & 83,81 & 94,17 & 88,16 & 84,72 \\
+Indoxacarb & 96,68 & 67,30 & 84,25 & 72,71 & 45,84 & 97,24 & 69,86 & 83,57 & 74,79 & 47,39 & 98,24 & 78,99 & 94,17 & 84,28 & 83,15 \\
+Abamectin & 77,88 & 62,44 & 79,73 & 63,63 & 54,19 & 78,22 & 62,61 & 79,92 & 63,94 & 54,36 & 85,66 & 68,78 & 87,79 & 72,82 & 79,98 \\
+Propamocarb.HCL & 96,19 & 63,86 & 82,52 & 69,03 & 45,98 & 96,98 & 66,68 & 81,43 & 71,57 & 46,96 & 97,60 & 73,87 & 94,00 & 80,11 & 82,97 \\
+Chlothianidin & 74,41 & 71,13 & 78,86 & 71,18 & 76,26 & 74,49 & 71,21 & 78,95 & 71,27 & 76,53 & 92,53 & 88,67 & 91,61 & 89,99 & 93,57 \\
+\hline
+\textbf{Trung bình} & \textbf{85,72} & \textbf{68,12} & \textbf{83,31} & \textbf{70,44} & \textbf{57,65} & \textbf{86,33} & \textbf{68,91} & \textbf{83,39} & \textbf{71,38} & \textbf{58,15} & \textbf{93,33} & \textbf{79,61} & \textbf{91,74} & \textbf{83,01} & \textbf{83,60} \\
+\hline
+\end{tabular}%
+}
+\end{table*}
+
+Bảng~\ref{tab:res-stage1-oceanfx} cho kết quả cùng thứ hạng với FLAMENIR:
+SMART-NIR vượt trội hai mô hình cây ở mọi chỉ số, và Accuracy/PR-AUC của
+XGBoost, LightGBM, SMART-NIR trên OCEANFX (86,00--94,24\% / 68,05--90,30\%)
+đều cao hơn bảng tương ứng trên FLAMENIR (81,55--94,73\% / 54,53--88,83\%),
+cùng xu hướng quan sát được ở bài toán phân loại thực phẩm.
+
+\textbf{Đánh giá trên tập kiểm tra độc lập.} Tương tự FLAMENIR, trên 100
+mẫu OCEANFX tách riêng, Bước 1 đạt Accuracy/Recall/PR-AUC lần lượt là
+86,58\%/78,04\%/67,86\% với XGBoost, 86,32\%/84,99\%/71,84\% với LightGBM
+và 95,05\%/96,32\%/95,99\% với SMART-NIR -- một lần nữa gần khớp với kết
+quả kiểm định chéo ở Bảng~\ref{tab:res-stage1-oceanfx}, riêng SMART-NIR còn
+cho PR-AUC trên tập kiểm tra độc lập (95,99\%) cao hơn cả kiểm định chéo
+(90,30\%), củng cố thêm rằng kết quả kiểm định chéo của phương pháp này
+không phải do quá khớp vào cách chia fold cụ thể.
 \end{document}
