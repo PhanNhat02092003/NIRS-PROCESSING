@@ -28,6 +28,8 @@ BIN_FACTOR = {"FLAMENIR": 1, "OCEANFX": 8}
 # 9 food categories, in the same order used to build the one-hot input at
 # training time (list(food_ids) from DATASET_ROOT/food_ids.json, F01..F09) --
 # hardcoded here so serving has no dependency on the external dataset folder.
+# The API reports the F01..F09 id (never the Vietnamese name) -- see
+# FOOD_ID_LEGEND in app.py for the id -> name table shown in Swagger.
 FOOD_NAME_TO_INDEX = {
     "Xà Lách": 0,
     "Cải Bẹ Xanh": 1,
@@ -40,15 +42,20 @@ FOOD_NAME_TO_INDEX = {
     "Đậu Cove": 8,
 }
 N_FOOD = len(FOOD_NAME_TO_INDEX)
+FOOD_IDS = [f"F{i + 1:02d}" for i in range(N_FOOD)]  # index -> "F01".."F09"
+FOOD_NAME_TO_ID = {name: FOOD_IDS[idx] for name, idx in FOOD_NAME_TO_INDEX.items()}
 
 # 19 pesticide substances, in the same order as DATASET_ROOT/pesticide_ids.json
-# (P01..P19) -- see CLAUDE.md; not alphabetical.
+# (P01..P19) -- see CLAUDE.md; not alphabetical. The API reports the P01..P19
+# id -- see SUBSTANCE_ID_LEGEND in app.py for the id -> chemical-name table
+# shown in Swagger.
 SUBSTANCES = [
     'Thiamethoxam', 'Permethrin', 'Metalaxyl', 'Azoxystrobin', 'Difenoconazole',
     'Cypermethrin', 'Cyhalothrin', 'Chlorantraniliprol', 'Emamectin benzoate',
     'Chlorothalonil', 'Triadimefon', 'Cyantraniliprole', 'Flutolanil', 'Indoxacarb',
     'Abamectin', 'Propamocarb.HCL', 'Imidaclopird', 'Chlopyrifos Methyl', 'Chlothianidin',
 ]
+SUBSTANCE_NAME_TO_ID = {name: f"P{i + 1:02d}" for i, name in enumerate(SUBSTANCES)}
 
 
 def _bin_spectra(X: np.ndarray, machine: str) -> np.ndarray:
@@ -215,6 +222,11 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     detected substance is "An toàn"; `substances_over_threshold` is always
     derived from that same per-substance verdict, so it can never name a
     substance outside `substances_detected`.
+
+    Categories and substances are reported as their F01..F09 / P01..P19 ids
+    (FOOD_NAME_TO_ID / SUBSTANCE_NAME_TO_ID) rather than the Vietnamese/full
+    names used internally -- see FOOD_ID_LEGEND / SUBSTANCE_ID_LEGEND in
+    app.py for the id -> name table shown in Swagger.
     """
     categories = infer_category_classification(spectra, machine)
     detected_list = infer_substances_detection(spectra, machine, categories)
@@ -224,9 +236,9 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     for category, detected, severity in zip(categories, detected_list, severity_list):
         over_threshold = [s for s, verdict in severity.items() if verdict == "Vượt ngưỡng"]
         results.append({
-            "category": category,
-            "substances_detected": detected,
+            "category": FOOD_NAME_TO_ID[category],
+            "substances_detected": [SUBSTANCE_NAME_TO_ID[s] for s in detected],
             "safe": len(over_threshold) == 0,
-            "substances_over_threshold": over_threshold,
+            "substances_over_threshold": [SUBSTANCE_NAME_TO_ID[s] for s in over_threshold],
         })
     return results

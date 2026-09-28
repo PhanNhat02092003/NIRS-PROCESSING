@@ -135,14 +135,19 @@ per-food prior). `safe` is true only if every detected substance came back
 An toàn; `substances_over_threshold` is read off that same per-substance
 result, so it is always a subset of `substances_detected`.
 
+`category` and every substance id are returned as **ids** (`F01`..`F09`,
+`P01`..`P19`), not names -- see the id tables below, which are also shown
+in the endpoint's description on the Swagger UI (`/docs`) and in its
+`description` field on `/openapi.json`.
+
 ```json
 {
   "results": [
     {
-      "category": "Cải Thìa",
-      "substances_detected": ["Thiamethoxam"],
+      "category": "F03",
+      "substances_detected": ["P01"],
       "safe": false,
-      "substances_over_threshold": ["Thiamethoxam"]
+      "substances_over_threshold": ["P01"]
     }
   ]
 }
@@ -152,15 +157,31 @@ One result per input spectrum, in the same order. On failure (e.g. wrong
 spectrum length, or missing model files for a substance/machine) the
 endpoint returns HTTP 500 with `{"error": "<message>"}`.
 
-9 possible categories: `Khổ Qua`, `Mồng Tơi`, `Cải Thìa`, `Cà Chua`, `Cải Bẹ Xanh`,
-`Dưa Leo`, `Xà Lách`, `Đậu Cove`, `Cà Rốt`.
+#### Food category ids (`category`)
 
-19 substances tracked (in `pesticide_ids.json` order, P01–P19):
-`Thiamethoxam`, `Permethrin`, `Metalaxyl`, `Azoxystrobin`, `Difenoconazole`,
-`Cypermethrin`, `Cyhalothrin`, `Chlorantraniliprol`, `Emamectin benzoate`,
-`Chlorothalonil`, `Triadimefon`, `Cyantraniliprole`, `Flutolanil`,
-`Indoxacarb`, `Abamectin`, `Propamocarb.HCL`, `Imidaclopird`,
-`Chlopyrifos Methyl`, `Chlothianidin`.
+| id | Tên tiếng Việt | English | id | Tên tiếng Việt | English |
+|---|---|---|---|---|---|
+| `F01` | Xà Lách | Lettuce | `F06` | Cà Rốt | Carrot |
+| `F02` | Cải Bẹ Xanh | Mustard greens | `F07` | Dưa Leo | Cucumber |
+| `F03` | Cải Thìa | Bok choy | `F08` | Khổ Qua | Bitter melon |
+| `F04` | Mồng Tơi | Malabar spinach | `F09` | Đậu Cove | Cowpea / green bean |
+| `F05` | Cà Chua | Tomato | | | |
+
+#### Pesticide substance ids (`substances_detected` / `substances_over_threshold`)
+
+| id | Substance | id | Substance |
+|----|-----------|----|-----------|
+| P01 | Thiamethoxam | P11 | Triadimefon |
+| P02 | Permethrin | P12 | Cyantraniliprole |
+| P03 | Metalaxyl | P13 | Flutolanil |
+| P04 | Azoxystrobin | P14 | Indoxacarb |
+| P05 | Difenoconazole | P15 | Abamectin |
+| P06 | Cypermethrin | P16 | Propamocarb.HCL |
+| P07 | Cyhalothrin | P17 | Imidaclopird |
+| P08 | Chlorantraniliprol | P18 | Chlopyrifos Methyl |
+| P09 | Emamectin benzoate | P19 | Chlothianidin |
+| P10 | Chlorothalonil | | |
+
 A substance is only ever returned as detected/over-threshold if it had
 enough samples of both classes on that machine to be trainable (see
 `checkpoint/substance_regression/stage1_smartnir_os2/<machine>/<substance>`
