@@ -54,13 +54,23 @@ def snv(X: np.ndarray) -> np.ndarray:
     return (X - mean) / std
 
 
-def preprocess_spectra(X: np.ndarray):
+def preprocess_spectra(X: np.ndarray, apply_savgol_snv: bool = True):
     """Full per-sample pipeline: outlier filter -> SG smoothing -> SNV.
     Returns (X_processed, keep_mask) where keep_mask marks which input rows
     survived (caller must apply it to any parallel arrays, e.g. targets).
+
+    apply_savgol_snv=False skips the SG smoothing + SNV steps, keeping only
+    the outlier filter (a data-quality safety net, not a chemometric
+    preprocessing choice). Some architectures -- e.g. XSpecMamba, whose NIR
+    Gradient Enhancement module explicitly learns a differentiable
+    replacement for SG/scatter-correction end-to-end -- are designed and
+    reported on in their reference paper *without* this external
+    preprocessing; feeding them pre-smoothed/pre-corrected spectra both
+    duplicates and potentially fights that module's own job.
     """
     keep_mask = remove_spectral_outliers(X)
     X = X[keep_mask]
-    X = savgol_smooth(X)
-    X = snv(X)
+    if apply_savgol_snv:
+        X = savgol_smooth(X)
+        X = snv(X)
     return X.astype(np.float32), keep_mask

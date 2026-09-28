@@ -1,12 +1,12 @@
 # NIRS Processing
 
-A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with FastAPI. It provides vegetable classification, chemical substance detection, and substance concentration prediction using deep learning (SMARTNIR) and XGBoost models.
+A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with FastAPI. It provides vegetable classification (GuidedDCNet), pesticide-substance detection, and safety-level classification (both SMART-NIR) using deep learning models.
 
 ## Features
 
-- **Vegetable Classification** — Classify vegetables into 9 categories
-- **Substance Detection** — Detect the presence/absence of 19 pesticide substances
-- **Concentration Prediction** — Predict concentration (mg/kg) of detected substances
+- **Vegetable Classification** — Classify vegetables into 9 categories (GuidedDCNet)
+- **Substance Detection** — Detect the presence/absence of 19 pesticide substances (SMART-NIR, Bước 1)
+- **Safety Classification** — Classify each detected substance as An toàn (safe) or Vượt ngưỡng (over MRL) (SMART-NIR, Bước 2)
 
 ## Project Structure
 
@@ -14,16 +14,19 @@ A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with Fas
 ├── app.py                  # FastAPI application & endpoints
 ├── utils.py                # Inference utilities & model loading
 ├── model/
-│   ├── classification_model.py   # SMARTNIR neural network architecture
-│   └── regression_model.py
+│   ├── classification_model.py    # SMART-NIR neural network architecture
+│   ├── guideddcnet_model.py       # GuidedDCNet (diffusion-based) architecture
+│   └── smartnir_food_model.py     # SMART-NIR + food one-hot (Bước 1/2) + food-prior shrinkage
 ├── dataset/
 │   └── preprocessing.py    # Savitzky-Golay + SNV preprocessing (must match training)
 ├── checkpoint/
-│   ├── category_classification/{FLAMENIR,OCEANFX}/checkpoint_fold{1..5}.pth
-│   └── substance_regression/{stage1,stage2}/{FLAMENIR,OCEANFX}/{substance}/...
+│   ├── category_classification_guideddcnet/{FLAMENIR,OCEANFX}/checkpoint_fold{1..5}.pth
+│   └── substance_regression/stage1_smartnir_os2/{FLAMENIR,OCEANFX}/{substance}/...
+│   └── substance_severity_smartnir/{FLAMENIR,OCEANFX}/{substance}/...
 ├── data/
-│   ├── category_classification/{FLAMENIR,OCEANFX}/fold_{1..5}/{stats.npz,label_encoder.pkl}
-│   └── substance_regression/{stage1,stage2}/{FLAMENIR,OCEANFX}/{substance}/...
+│   ├── category_classification_guideddcnet/{FLAMENIR,OCEANFX}/fold_{1..5}/{stats.npz,label_encoder.pkl}
+│   └── substance_regression/stage1_smartnir_os2/{FLAMENIR,OCEANFX}/{substance}/...
+│   └── substance_severity_smartnir/{FLAMENIR,OCEANFX}/{substance}/...
 ├── requirements.txt
 ├── Dockerfile
 └── server.sh
@@ -113,7 +116,7 @@ curl -X POST http://localhost:9000/nir-processing/substances-detection \
   -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
 
-**Predict concentrations:**
+**Classify safety level of detected substances:**
 
 ```bash
 curl -X POST http://localhost:9000/nir-processing/substances-prediction \
@@ -136,6 +139,8 @@ when the server is running.
 Spectra are automatically preprocessed (Savitzky-Golay smoothing + SNV
 scatter correction, `dataset/preprocessing.py`) to match what the models
 were trained on -- send raw spectral intensities, not pre-processed ones.
+For `OCEANFX`, spectra are additionally averaged in groups of 8 neighbouring
+wavelengths (2136 → 264 points) before every model, matching training.
 
 Each endpoint returns one result per input spectrum, in the same order. On
 failure (e.g. wrong spectrum length, or missing model files for a
@@ -143,8 +148,8 @@ substance/machine) the endpoint returns HTTP 500 with `{"error": "<message>"}`.
 
 ### `POST /nir-processing/category-classification`
 
-Returns the predicted vegetable category for each spectrum, voted across
-the 5 K-Fold models.
+Returns the predicted vegetable category for each spectrum (GuidedDCNet),
+voted across the 5 K-Fold models.
 
 ```json
 {"results": ["Cải Thìa"]}
@@ -155,9 +160,11 @@ the 5 K-Fold models.
 
 ### `POST /nir-processing/substances-detection`
 
-Returns the list of substances detected as present (majority vote across
-5 XGBoost fold models, decision threshold picked for target Recall $\geq 0.9$)
-for each spectrum.
+Predicts the vegetable category internally first (used as an extra
+one-hot input, since MRL/detection depends on the food type), then returns
+the list of substances detected as present (SMART-NIR, Bước 1) for each
+spectrum: 5-fold ensemble of calibrated probabilities (mean across folds),
+compared against the mean of the 5 folds' Recall≥0.9 decision thresholds.
 
 ```json
 {"results": [["Thiamethoxam"]]}
@@ -165,21 +172,26 @@ for each spectrum.
 
 ### `POST /nir-processing/substances-prediction`
 
-Runs detection internally first, then predicts concentration (mg/kg, 5-fold
-average) only for the substances found present in each spectrum.
+Runs category classification and detection internally first, then
+classifies each detected substance as **An toàn** (safe) or **Vượt ngưỡng**
+(over the food-specific MRL) (SMART-NIR, Bước 2, same 5-fold ensemble
+protocol as detection, plus blending with each substance's empirical
+per-food prior).
 
 ```json
-{"results": [{"Thiamethoxam": 149.76327514648438}]}
+{"results": [{"Thiamethoxam": "An toàn"}]}
 ```
 
-19 substances tracked: `Thiamethoxam`, `Permethrin`, `Metalaxyl`,
-`Azoxystrobin`, `Imidaclopird`, `Difenoconazole`, `Cypermethrin`,
-`Cyhalothrin`, `Chlorantraniliprol`, `Chlopyrifos Methyl`,
-`Emamectin benzoate`, `Chlorothalonil`, `Triadimefon`, `Cyantraniliprole`,
-`Flutolanil`, `Indoxacarb`, `Abamectin`, `Propamocarb.HCL`, `Chlothianidin`.
+19 substances tracked (in `pesticide_ids.json` order, P01–P19):
+`Thiamethoxam`, `Permethrin`, `Metalaxyl`, `Azoxystrobin`, `Difenoconazole`,
+`Cypermethrin`, `Cyhalothrin`, `Chlorantraniliprol`, `Emamectin benzoate`,
+`Chlorothalonil`, `Triadimefon`, `Cyantraniliprole`, `Flutolanil`,
+`Indoxacarb`, `Abamectin`, `Propamocarb.HCL`, `Imidaclopird`,
+`Chlopyrifos Methyl`, `Chlothianidin`.
 A substance is only ever returned by detection/prediction if it had enough
-positive samples on that machine to be trainable (see
-`checkpoint/substance_regression/stage1/<machine>/<substance>` --
+samples of both classes on that machine to be trainable (see
+`checkpoint/substance_regression/stage1_smartnir_os2/<machine>/<substance>`
+and `checkpoint/substance_severity_smartnir/<machine>/<substance>` --
 substances missing that folder are never trained and never predicted).
 
 ## Dependencies
@@ -191,6 +203,6 @@ substances missing that folder are never trained and never predicted).
 | PyTorch | 2.8.0 (CUDA 12.8) |
 | TorchVision | 0.23.0 |
 | scikit-learn | 1.7.0 |
-| XGBoost | 3.0.5 |
+| SciPy | (latest) |
 | pandas | 2.3.2 |
 | NumPy | 2.3.1 |

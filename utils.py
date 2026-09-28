@@ -1,15 +1,15 @@
 import os
+import json
 import joblib
 
 from model.classification_model import *
-from model.regression_model import *
+from model.guideddcnet_model import GuidedDCNet, GuidedDCNetConfig
+from model.smartnir_food_model import SmartNIRWithFood, predict_logit_diff, food_prior_shrinkage
 from dataset.preprocessing import savgol_smooth, snv
 
 import numpy as np
-import xgboost as xgb
 from pydantic import BaseModel
-from typing import List
-from torch.nn.functional import softmax
+from typing import List, Optional
 from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
@@ -18,219 +18,191 @@ class NirsRequest(BaseModel):
     spectrum: List[List[float]]
     machine: Literal['FLAMENIR', 'OCEANFX']
 
+K_FOLDS = 5
+
+# OCEANFX's 2136-point spectra are averaged in groups of 8 for every deep
+# model in the pipeline (GuidedDCNet food classification, SMART-NIR Buoc 1/2);
+# FLAMENIR's 128 points are used at full resolution. Must match training.
+BIN_FACTOR = {"FLAMENIR": 1, "OCEANFX": 8}
+
+# 9 food categories, in the same order used to build the one-hot input at
+# training time (list(food_ids) from DATASET_ROOT/food_ids.json, F01..F09) --
+# hardcoded here so serving has no dependency on the external dataset folder.
+FOOD_NAME_TO_INDEX = {
+    "Xà Lách": 0,
+    "Cải Bẹ Xanh": 1,
+    "Cải Thìa": 2,
+    "Mồng Tơi": 3,
+    "Cà Chua": 4,
+    "Cà Rốt": 5,
+    "Dưa Leo": 6,
+    "Khổ Qua": 7,
+    "Đậu Cove": 8,
+}
+N_FOOD = len(FOOD_NAME_TO_INDEX)
+
+# 19 pesticide substances, in the same order as DATASET_ROOT/pesticide_ids.json
+# (P01..P19) -- see CLAUDE.md; not alphabetical.
+SUBSTANCES = [
+    'Thiamethoxam', 'Permethrin', 'Metalaxyl', 'Azoxystrobin', 'Difenoconazole',
+    'Cypermethrin', 'Cyhalothrin', 'Chlorantraniliprol', 'Emamectin benzoate',
+    'Chlorothalonil', 'Triadimefon', 'Cyantraniliprole', 'Flutolanil', 'Indoxacarb',
+    'Abamectin', 'Propamocarb.HCL', 'Imidaclopird', 'Chlopyrifos Methyl', 'Chlothianidin',
+]
+
+
+def _bin_spectra(X: np.ndarray, machine: str) -> np.ndarray:
+    factor = BIN_FACTOR[machine]
+    if factor <= 1:
+        return X
+    n_out = (X.shape[1] // factor) // 8 * 8
+    return X[:, :n_out * factor].reshape(len(X), n_out, factor).mean(axis=2).astype(np.float32)
+
+
+def _preprocess(spectra: np.ndarray, machine: str) -> np.ndarray:
+    # Same Savitzky-Golay smoothing + SNV scatter correction applied before
+    # training normalization stats were computed (dataset/preprocessing.py).
+    # The outlier filter in preprocess_spectra() is a dataset-wide statistic
+    # (median/MAD across rows) and doesn't apply to a single live request, so
+    # only the per-sample steps are replicated here.
+    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
+    return _bin_spectra(spectra, machine)
+
+
+def _food_onehot(categories: List[str]) -> np.ndarray:
+    F = np.zeros((len(categories), N_FOOD), dtype=np.float32)
+    for i, cat in enumerate(categories):
+        idx = FOOD_NAME_TO_INDEX.get(cat)
+        if idx is not None:
+            F[i, idx] = 1.0
+    return F
+
+
 def infer_category_classification(spectra: np.ndarray, machine: str):
-    task = "category_classification"
-    k_folds = 5
+    """GuidedDCNet, 5-fold ensemble by majority vote
+    (checkpoint/category_classification_guideddcnet)."""
+    task = "category_classification_guideddcnet"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Load configuration from fold 1 (assuming signal_len consistent)
-    save_fold_dir = f"data/{task}/{machine}/fold_1"
-    stats_path = os.path.join(save_fold_dir, "stats.npz")
+    stats_path = f"data/{task}/{machine}/fold_1/stats.npz"
     if not os.path.exists(stats_path):
         raise FileNotFoundError(f"Stats file not found for {machine} fold 1")
+    signal_len = np.load(stats_path)['mean'].shape[1]
 
-    stats = np.load(stats_path)
-    signal_len = stats['mean'].shape[1]
-
-    # Check input shape
+    spectra = _preprocess(spectra, machine)
     if spectra.shape[1] != signal_len:
         raise ValueError(f"Input spectrum length {spectra.shape[1]} does not match expected {signal_len}")
+    spectra_tensor = torch.from_numpy(spectra).float().to(device)
 
-    # Match the Savitzky-Golay smoothing + SNV scatter correction applied to
-    # spectra before the training normalization stats were computed
-    # (dataset/preprocessing.py) -- skipping this causes train/serve skew.
-    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
-
-    # Load means, stds, models, and label_encoders for all folds
-    means = []
-    stds = []
-    models = []
-    label_encoders = []
-    num_classes_list = []
-    for fold in range(1, k_folds + 1):
+    all_labels = []
+    for fold in range(1, K_FOLDS + 1):
         save_fold_dir = f"data/{task}/{machine}/fold_{fold}"
-        stats = np.load(os.path.join(save_fold_dir, "stats.npz"))
-        means.append(stats['mean'])
-        stds.append(stats['std'])
+        stats = np.load(f"{save_fold_dir}/stats.npz")
+        mean_t = torch.from_numpy(stats['mean']).float().to(device)
+        std_t = torch.from_numpy(stats['std']).float().to(device)
+        label_encoder = joblib.load(f"{save_fold_dir}/label_encoder.pkl")
 
-        labels_path = os.path.join(save_fold_dir, "label_encoder.pkl")
-        if not os.path.exists(labels_path):
-            raise FileNotFoundError(f"Label encoder file not found for {machine} fold {fold}")
-        label_encoder = joblib.load(labels_path)
-        label_encoders.append(label_encoder)
-        num_classes_list.append(len(label_encoder.classes_))
-
-        cfg = SmartNIRClassificationConfig(
-            signal_len=signal_len,
-            out_ch_per_branch=64,
-            d_model=128,
-            depth=3,
-            n_heads=4,
-            classifier="kan",
-            num_classes=num_classes_list[-1]
-        )
-
-        model = SMARTNIRClassifier(cfg).to(device)
+        cfg = GuidedDCNetConfig(num_classes=len(label_encoder.classes_))
+        model = GuidedDCNet(cfg).to(device)
         model_path = f"checkpoint/{task}/{machine}/checkpoint_fold{fold}.pth"
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model not found for {machine} fold {fold}")
-
         model.load_state_dict(torch.load(model_path, map_location=device))
         model.eval()
-        models.append(model)
 
-    # Inference
-    spectra_tensor = torch.from_numpy(spectra).float().to(device)  # (batch_size, signal_len)
-    all_labels = []
-
-    for mean, std, model, label_encoder in zip(means, stds, models, label_encoders):
-        mean_t = torch.from_numpy(mean).float().to(device)
-        std_t = torch.from_numpy(std).float().to(device)
         norm_x = (spectra_tensor - mean_t) / std_t
         with torch.no_grad():
-            outputs = model(norm_x)
-            probs = softmax(outputs, dim=1)
-            preds = torch.argmax(probs, dim=1).cpu().numpy()
-            fold_labels = label_encoder.inverse_transform(preds)
-        all_labels.append(fold_labels)
+            y0_hat = model.reverse_sample(norm_x)
+            preds = torch.argmax(y0_hat, dim=1).cpu().numpy()
+        all_labels.append(label_encoder.inverse_transform(preds))
 
-    # Voting for predictions on labels
     all_labels = np.array(all_labels)  # (k_folds, batch_size)
     voted_preds = []
     for i in range(spectra.shape[0]):
         votes = Counter(all_labels[:, i])
-        most_common = votes.most_common(1)
-        voted_preds.append(most_common[0][0])
-
+        voted_preds.append(votes.most_common(1)[0][0])
     return voted_preds
 
-def infer_substances_detection(spectra: np.ndarray, machine: str):
-    task = "substance_regression"
-    substances = [
-        'Thiamethoxam', 'Permethrin', 'Metalaxyl', 'Azoxystrobin',
-        'Imidaclopird', 'Difenoconazole', 'Cypermethrin', 'Cyhalothrin',
-        'Chlorantraniliprol', 'Chlopyrifos Methyl', 'Emamectin benzoate',
-        'Chlorothalonil', 'Triadimefon', 'Cyantraniliprole', 'Flutolanil',
-        'Indoxacarb', 'Abamectin', 'Propamocarb.HCL', 'Chlothianidin'
-    ]
-    k_folds = 5
 
-    # Same preprocessing as training (dataset/preprocessing.py) to avoid
-    # train/serve skew.
-    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
+def _smartnir_ensemble(spectra: np.ndarray, Ft: "torch.Tensor", data_dir: str, ckpt_dir: str,
+                        substance: str, device, food_idx: Optional[np.ndarray] = None):
+    """Averages calibrated (optionally food-prior-shrunk, for Buoc 2)
+    probabilities and decision thresholds over the 5 fold models -- same
+    ensembling as evaluate_holdout_stage1.py (validated against K-Fold
+    cross-validation numbers on a held-out sample test). Returns
+    (avg_prob, avg_threshold), or (None, None) if no fold's artefacts exist.
+    """
+    probs, thrs = [], []
+    idx = torch.arange(len(spectra), device=device)
+    for fold in range(1, K_FOLDS + 1):
+        norm_path = f"{data_dir}/fold_{fold}_norm.npz"
+        model_path = f"{ckpt_dir}/{substance}_fold_{fold}.pth"
+        calib_path = f"{data_dir}/{substance}_fold_{fold}_calibrator.pkl"
+        thr_path = f"{data_dir}/{substance}_fold_{fold}_threshold.json"
+        prior_path = f"{data_dir}/{substance}_fold_{fold}_food_prior.json"
+        needed = (norm_path, model_path, calib_path, thr_path) + ((prior_path,) if food_idx is not None else ())
+        if not all(os.path.exists(p) for p in needed):
+            continue
 
-    results = []
-    for i in range(spectra.shape[0]):
-        sample = spectra[i:i+1]
-        detected = []
-        for substance in substances:
-            save_scaler_dir = f"data/{task}/stage1/{machine}/{substance}"
-            save_best_model_dir = f"checkpoint/{task}/stage1/{machine}/{substance}"
-            if not os.path.exists(save_scaler_dir) or not os.path.exists(save_best_model_dir):
-                continue
+        nz = np.load(norm_path)
+        Xn = torch.tensor((spectra - nz["mean"]) / nz["std"], dtype=torch.float32, device=device)
+        model = SmartNIRWithFood(Xn.shape[1], Ft.shape[1]).to(device)
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        score = predict_logit_diff(model, Xn, Ft, idx, 256)
 
-            all_votes = []
-            for fold in range(1, k_folds + 1):
-                scaler_path = os.path.join(save_scaler_dir, f"{substance}_fold_{fold}_scaler.pkl")
-                if not os.path.exists(scaler_path):
-                    continue
-                scaler = joblib.load(scaler_path)
-                sample_scaled = scaler.transform(sample)
+        calib = joblib.load(calib_path)
+        p = calib.predict_proba(score.reshape(-1, 1))[:, 1]
+        if food_idx is not None:
+            prior_by_food = np.array(json.load(open(prior_path))["prior_by_food"])
+            p = food_prior_shrinkage(p, food_idx, prior_by_food)
 
-                model_path = os.path.join(save_best_model_dir, f"{substance}_fold_{fold}.json")
-                if not os.path.exists(model_path):
-                    continue
-                model = xgb.Booster()
-                model.load_model(model_path)
+        probs.append(p)
+        thrs.append(json.load(open(thr_path))["threshold"])
 
-                dsample = xgb.DMatrix(sample_scaled)
-                prob = model.predict(dsample)[0]
-                vote = 1 if prob > 0.5 else 0
-                all_votes.append(vote)
+    if not probs:
+        return None, None
+    return np.mean(probs, axis=0), float(np.mean(thrs))
 
-            if all_votes:
-                num_positive = sum(all_votes)
-                if num_positive > len(all_votes) / 2:
-                    detected.append(substance)
 
-        results.append(detected)
+def infer_substances_detection(spectra: np.ndarray, machine: str, categories: List[str]):
+    """Buoc 1 -- presence/absence, SMART-NIR + food one-hot
+    (checkpoint/substance_regression/stage1_smartnir_os2), 5-fold ensemble."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    spectra = _preprocess(spectra, machine)
+    Ft = torch.tensor(_food_onehot(categories), device=device)
 
+    results = [[] for _ in range(len(spectra))]
+    for substance in SUBSTANCES:
+        data_dir = f"data/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
+        ckpt_dir = f"checkpoint/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
+        avg_prob, avg_thr = _smartnir_ensemble(spectra, Ft, data_dir, ckpt_dir, substance, device)
+        if avg_prob is None:
+            continue
+        for i, detected in enumerate(avg_prob > avg_thr):
+            if detected:
+                results[i].append(substance)
     return results
 
-def infer_substances_prediction(spectra: np.ndarray, machine: str, detected_list: list[list[str]]):
-    task = "substance_regression"
-    k_folds = 5
+
+def infer_substances_severity(spectra: np.ndarray, machine: str, categories: List[str],
+                               detected_list: List[List[str]]):
+    """Buoc 2 -- An toan / Vuot nguong, SMART-NIR + food one-hot + per-food
+    prior shrinkage (checkpoint/substance_severity_smartnir), 5-fold ensemble."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    spectra = _preprocess(spectra, machine)
+    Ft = torch.tensor(_food_onehot(categories), device=device)
+    food_idx = np.array([FOOD_NAME_TO_INDEX.get(c, 0) for c in categories])
 
-    # Same preprocessing as training (dataset/preprocessing.py) to avoid
-    # train/serve skew.
-    spectra = snv(savgol_smooth(spectra)).astype(np.float32)
-
-    results = []
-    for i in range(spectra.shape[0]):
-        sample = spectra[i:i+1]  # (1, signal_len)
-        detected = detected_list[i]
-        concentrations = {substance: None for substance in detected}
-        for substance in detected:
-            save_fold_dir_base = f"data/{task}/stage2/{machine}/{substance}"
-            save_best_model_dir = f"checkpoint/{task}/stage2/{machine}/{substance}"
-            if not os.path.exists(save_fold_dir_base) or not os.path.exists(save_best_model_dir):
-                continue  # Remains None
-
-            all_preds = []
-            signal_len = None
-            for fold in range(1, k_folds + 1):
-                save_fold_dir = f"{save_fold_dir_base}/fold_{fold}"
-                stats_path = os.path.join(save_fold_dir, "stats.npz")
-                if not os.path.exists(stats_path):
-                    continue
-                stats = np.load(stats_path)
-                mean_X = stats['mean_X']
-                std_X = stats['std_X']
-                mean_y = stats['mean_y']
-                std_y = stats['std_y']
-
-                if signal_len is None:
-                    signal_len = mean_X.shape[1]
-                elif signal_len != mean_X.shape[1]:
-                    continue  # Inconsistent signal length
-
-                sample_norm = (sample - mean_X) / std_X
-                sample_tensor = torch.from_numpy(sample_norm).float().to(device)
-
-                cfg = SmartNIRRegressionConfig(
-                    signal_len=signal_len,
-                    out_ch_per_branch=64,
-                    d_model=128,
-                    depth=3,
-                    n_heads=4,
-                    classifier="kan",
-                    num_targets=1,
-                    kan_basis=8
-                )
-
-                model = SMARTNIRRegressor(cfg).to(device)
-                model_path = f"{save_best_model_dir}/checkpoint_fold{fold}.pth"
-                if not os.path.exists(model_path):
-                    continue
-
-                model.load_state_dict(torch.load(model_path, map_location=device))
-                model.eval()
-
-                with torch.no_grad():
-                    output = model(sample_tensor).squeeze(-1).cpu().numpy()[0]
-
-                # Denormalize: undo z-score, then undo the log1p applied to
-                # the target before training (dataset/regression_dataset.py,
-                # RegressionNIRSDataset.inverse_transform_y) -- without
-                # expm1 this returns log1p(concentration), not concentration.
-                pred = np.expm1(output * std_y + mean_y)
-                all_preds.append(pred)
-
-            if all_preds:
-                avg_pred = np.mean(all_preds)
-                concentrations[substance] = float(avg_pred)
-
-        results.append(concentrations)
-
+    results = [{s: None for s in detected} for detected in detected_list]
+    substances_needed = sorted({s for detected in detected_list for s in detected})
+    for substance in substances_needed:
+        data_dir = f"data/substance_severity_smartnir/{machine}/{substance}"
+        ckpt_dir = f"checkpoint/substance_severity_smartnir/{machine}/{substance}"
+        avg_prob, avg_thr = _smartnir_ensemble(spectra, Ft, data_dir, ckpt_dir, substance, device, food_idx=food_idx)
+        if avg_prob is None:
+            continue
+        verdict = np.where(avg_prob > avg_thr, "Vượt ngưỡng", "An toàn")
+        for i, detected in enumerate(detected_list):
+            if substance in detected:
+                results[i][substance] = verdict[i]
     return results
