@@ -1,4 +1,3 @@
--f https://download.pytorch.org/whl/cu128
 fastapi
 uvicorn
 pandas
@@ -9,5 +8,7 @@ python-multipart
 python-dotenv
 scikit-learn
 xgboost
-torch
-torchvision
+lightgbm
+matplotlib
+tqdm
+soilspecdata
