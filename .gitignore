@@ -7,3 +7,10 @@ __pycache__/
 
 *.ipynb
 test/
+
+# Training-only artifacts from the train branch that sometimes linger in the
+# working tree after a checkout (they're tracked there, not here) -- keep
+# this lean deploy branch from ever accidentally picking them up.
+logs/
+additional_experiments/
+benchmark/
