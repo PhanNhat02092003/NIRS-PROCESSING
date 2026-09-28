@@ -7,3 +7,11 @@ __pycache__/
 *.py[cod]
 
 logs/
+
+# Deprecated EBAR baseline checkpoints over GitHub's 100MB hard file-size
+# limit (Permethrin/Cypermethrin on both machines, Mango's dry_matter) --
+# not part of the report, kept locally only.
+checkpoint/substance_regression/stage2_ebar/FLAMENIR/Permethrin/
+checkpoint/substance_regression/stage2_ebar/OCEANFX/Permethrin/
+checkpoint/substance_regression/stage2_ebar/OCEANFX/Cypermethrin/
+additional_experiments/Mango/checkpoint/substance_regression/stage2_ebar/Mango/dry_matter/
