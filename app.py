@@ -16,50 +16,16 @@ app.add_middleware(
 )
 
 @app.post(
-    "/nir-processing/category-classification",
+    "/nir-processing/analyze",
     response_class=JSONResponse,
     tags=["CSV"],
-    summary="Phân loại rau củ quả (Cà Chua, Cải Bẹ Xanh, Cải Thìa, Cà Rốt, Đậu Cove, Dưa Leo, Khổ Qua, Mồng Tơi, Xà Lách)",
+    summary="Phân tích phổ NIR: loại rau củ quả, thuốc trừ sâu phát hiện được và mức độ an toàn",
 )
-async def category_classification(request: NirsRequest) -> JSONResponse:
+async def analyze(request: NirsRequest) -> JSONResponse:
     spectra = np.array(request.spectrum, dtype=np.float32)
     machine = request.machine
     try:
-        results = infer_category_classification(spectra, machine)
-        return JSONResponse(content={"results": results})
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
-
-@app.post(
-    "/nir-processing/substances-detection",
-    response_class=JSONResponse,
-    tags=["CSV"],
-    summary="Phát hiện các hợp chất có trong rau củ quả sử dụng phổ NIR",
-)
-async def substances_detection(request: NirsRequest) -> JSONResponse:
-    spectra = np.array(request.spectrum, dtype=np.float32)
-    machine = request.machine
-    try:
-        categories = infer_category_classification(spectra, machine)
-        results = infer_substances_detection(spectra, machine, categories)
-        return JSONResponse(content={"results": results})
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
-@app.post(
-    "/nir-processing/substances-prediction",
-    response_class=JSONResponse,
-    tags=["CSV"],
-    summary="Phân loại mức độ an toàn (An toàn / Vượt ngưỡng) từng hợp chất phát hiện được trong rau củ quả sử dụng phổ NIR",
-)
-async def substances_prediction(request: NirsRequest) -> JSONResponse:
-    spectra = np.array(request.spectrum, dtype=np.float32)
-    machine = request.machine
-    try:
-        categories = infer_category_classification(spectra, machine)
-        detected_substances = infer_substances_detection(spectra, machine, categories)
-        results = infer_substances_severity(spectra, machine, categories, detected_substances)
+        results = analyze_spectrum(spectra, machine)
         return JSONResponse(content={"results": results})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

@@ -1,12 +1,13 @@
 # NIRS Processing
 
-A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with FastAPI. It provides vegetable classification (GuidedDCNet), pesticide-substance detection, and safety-level classification (both SMART-NIR) using deep learning models.
+A REST API for Near-Infrared Spectroscopy (NIRS) data processing, built with FastAPI. A single endpoint takes a raw spectrum and returns the vegetable category (GuidedDCNet), which pesticide substances were detected, and an overall safety verdict (both SMART-NIR).
 
 ## Features
 
-- **Vegetable Classification** — Classify vegetables into 9 categories (GuidedDCNet)
-- **Substance Detection** — Detect the presence/absence of 19 pesticide substances (SMART-NIR, Bước 1)
-- **Safety Classification** — Classify each detected substance as An toàn (safe) or Vượt ngưỡng (over MRL) (SMART-NIR, Bước 2)
+One endpoint, one spectrum in, three things out:
+- **Vegetable category** — one of 9 categories (GuidedDCNet)
+- **Detected pesticide substances** — presence/absence of the 19 tracked substances (SMART-NIR, Bước 1)
+- **Safety verdict** — safe only if every detected substance is An toàn (under its food-specific MRL); otherwise lists which substance(s) are Vượt ngưỡng (SMART-NIR, Bước 2). This is always derived from the same per-substance detection result, so it can never name a substance that wasn't reported as detected.
 
 ## Project Structure
 
@@ -100,26 +101,8 @@ present (they are committed to this repo).
 
 ## Quick Usage
 
-**Classify a vegetable:**
-
 ```bash
-curl -X POST http://localhost:9000/nir-processing/category-classification \
-  -H "Content-Type: application/json" \
-  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
-```
-
-**Detect substances:**
-
-```bash
-curl -X POST http://localhost:9000/nir-processing/substances-detection \
-  -H "Content-Type: application/json" \
-  -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
-```
-
-**Classify safety level of detected substances:**
-
-```bash
-curl -X POST http://localhost:9000/nir-processing/substances-prediction \
+curl -X POST http://localhost:9000/nir-processing/analyze \
   -H "Content-Type: application/json" \
   -d '{"spectrum": [[0.12, 0.45, 0.78, ...]], "machine": "FLAMENIR"}'
 ```
@@ -129,7 +112,7 @@ curl -X POST http://localhost:9000/nir-processing/substances-prediction \
 Interactive docs (Swagger UI) are available at `http://localhost:9000/docs`
 when the server is running.
 
-### Request body (all endpoints)
+### `POST /nir-processing/analyze`
 
 | Field | Type | Description |
 |---|---|---|
@@ -142,45 +125,35 @@ were trained on -- send raw spectral intensities, not pre-processed ones.
 For `OCEANFX`, spectra are additionally averaged in groups of 8 neighbouring
 wavelengths (2136 → 264 points) before every model, matching training.
 
-Each endpoint returns one result per input spectrum, in the same order. On
-failure (e.g. wrong spectrum length, or missing model files for a
-substance/machine) the endpoint returns HTTP 500 with `{"error": "<message>"}`.
-
-### `POST /nir-processing/category-classification`
-
-Returns the predicted vegetable category for each spectrum (GuidedDCNet),
-voted across the 5 K-Fold models.
+Runs three models per spectrum, in order: vegetable category (GuidedDCNet,
+5-fold majority vote) → substances detected (SMART-NIR Bước 1, using the
+predicted category as an extra input, since MRL/detection is food-dependent;
+5-fold ensemble of calibrated probabilities vs. the mean of the 5 folds'
+Recall≥0.9 thresholds) → safety verdict of each detected substance (SMART-NIR
+Bước 2, same ensembling plus blending with each substance's empirical
+per-food prior). `safe` is true only if every detected substance came back
+An toàn; `substances_over_threshold` is read off that same per-substance
+result, so it is always a subset of `substances_detected`.
 
 ```json
-{"results": ["Cải Thìa"]}
+{
+  "results": [
+    {
+      "category": "Cải Thìa",
+      "substances_detected": ["Thiamethoxam"],
+      "safe": false,
+      "substances_over_threshold": ["Thiamethoxam"]
+    }
+  ]
+}
 ```
+
+One result per input spectrum, in the same order. On failure (e.g. wrong
+spectrum length, or missing model files for a substance/machine) the
+endpoint returns HTTP 500 with `{"error": "<message>"}`.
 
 9 possible categories: `Khổ Qua`, `Mồng Tơi`, `Cải Thìa`, `Cà Chua`, `Cải Bẹ Xanh`,
 `Dưa Leo`, `Xà Lách`, `Đậu Cove`, `Cà Rốt`.
-
-### `POST /nir-processing/substances-detection`
-
-Predicts the vegetable category internally first (used as an extra
-one-hot input, since MRL/detection depends on the food type), then returns
-the list of substances detected as present (SMART-NIR, Bước 1) for each
-spectrum: 5-fold ensemble of calibrated probabilities (mean across folds),
-compared against the mean of the 5 folds' Recall≥0.9 decision thresholds.
-
-```json
-{"results": [["Thiamethoxam"]]}
-```
-
-### `POST /nir-processing/substances-prediction`
-
-Runs category classification and detection internally first, then
-classifies each detected substance as **An toàn** (safe) or **Vượt ngưỡng**
-(over the food-specific MRL) (SMART-NIR, Bước 2, same 5-fold ensemble
-protocol as detection, plus blending with each substance's empirical
-per-food prior).
-
-```json
-{"results": [{"Thiamethoxam": "An toàn"}]}
-```
 
 19 substances tracked (in `pesticide_ids.json` order, P01–P19):
 `Thiamethoxam`, `Permethrin`, `Metalaxyl`, `Azoxystrobin`, `Difenoconazole`,
@@ -188,11 +161,11 @@ per-food prior).
 `Chlorothalonil`, `Triadimefon`, `Cyantraniliprole`, `Flutolanil`,
 `Indoxacarb`, `Abamectin`, `Propamocarb.HCL`, `Imidaclopird`,
 `Chlopyrifos Methyl`, `Chlothianidin`.
-A substance is only ever returned by detection/prediction if it had enough
-samples of both classes on that machine to be trainable (see
+A substance is only ever returned as detected/over-threshold if it had
+enough samples of both classes on that machine to be trainable (see
 `checkpoint/substance_regression/stage1_smartnir_os2/<machine>/<substance>`
 and `checkpoint/substance_severity_smartnir/<machine>/<substance>` --
-substances missing that folder are never trained and never predicted).
+substances missing that folder are never trained and never reported).
 
 ## Dependencies
 

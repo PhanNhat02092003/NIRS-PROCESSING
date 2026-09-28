@@ -206,3 +206,27 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
             if substance in detected:
                 results[i][substance] = verdict[i]
     return results
+
+
+def analyze_spectrum(spectra: np.ndarray, machine: str):
+    """Full pipeline for one request: vegetable category (GuidedDCNet) ->
+    detected pesticides (SMART-NIR Bước 1) -> safety verdict per detected
+    substance (SMART-NIR Bước 2). Overall `safe` is True only if every
+    detected substance is "An toàn"; `substances_over_threshold` is always
+    derived from that same per-substance verdict, so it can never name a
+    substance outside `substances_detected`.
+    """
+    categories = infer_category_classification(spectra, machine)
+    detected_list = infer_substances_detection(spectra, machine, categories)
+    severity_list = infer_substances_severity(spectra, machine, categories, detected_list)
+
+    results = []
+    for category, detected, severity in zip(categories, detected_list, severity_list):
+        over_threshold = [s for s, verdict in severity.items() if verdict == "Vượt ngưỡng"]
+        results.append({
+            "category": category,
+            "substances_detected": detected,
+            "safe": len(over_threshold) == 0,
+            "substances_over_threshold": over_threshold,
+        })
+    return results
