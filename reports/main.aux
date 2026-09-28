@@ -1,0 +1,148 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*\HyPL@Entry[1]{}
+\HyPL@Entry{0<</S/D>>}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Sơ đồ tổng quan hệ thống, giải quyết đồng thời hai bài toán: phân loại loại thực phẩm, và đánh giá an toàn (An toàn / Vượt ngưỡng) đối với từng loại thuốc trừ sâu. Cả hai bài toán đều dùng chung Mô-đun Phân loại, một thành phần có thể thay thế bằng các kiến trúc độc lập -- XGBoost, LightGBM, SMART-NIR (cả hai bài toán) và GuidedDCNet (chỉ bài toán phân loại thực phẩm; Mục~\ref {sec:module-clf}). Bài toán (2) lặp lại độc lập cho từng loại trong 19 thuốc trừ sâu khảo sát theo cascade hai bước: Bước 1 phát hiện có/không, Bước 2 (chỉ chạy nếu Bước 1 xác định có) phân loại An toàn/Vượt ngưỡng theo MRL của đúng cặp (thực phẩm, thuốc trừ sâu); loại thực phẩm dự đoán được (hoặc nhãn thật khi huấn luyện) là một đầu vào bổ sung cho cả hai bước, vì MRL phụ thuộc vào loại thực phẩm (Mục~\ref {sec:data-thresholds}). Mỗi mô hình được huấn luyện theo kiểm định chéo K-Fold (K-Fold cross-validation, $K{=}5$); dự đoán cuối cùng của một mẫu tổng hợp từ 5 mô hình theo fold bằng bỏ phiếu đa số (majority voting). Kết xuất cuối cùng của hệ thống tổng hợp cả 20 mô hình (1 phân loại thực phẩm + 19$\times $2 an toàn thuốc trừ sâu) qua một phép hợp logic đơn giản, không cần huấn luyện thêm.}}{1}{figure.1}\protected@file@percent }
+\newlabel{fig:overview}{{1}{1}{Sơ đồ tổng quan hệ thống, giải quyết đồng thời hai bài toán: phân loại loại thực phẩm, và đánh giá an toàn (An toàn / Vượt ngưỡng) đối với từng loại thuốc trừ sâu. Cả hai bài toán đều dùng chung Mô-đun Phân loại, một thành phần có thể thay thế bằng các kiến trúc độc lập -- XGBoost, LightGBM, SMART-NIR (cả hai bài toán) và GuidedDCNet (chỉ bài toán phân loại thực phẩm; Mục~\ref {sec:module-clf}). Bài toán (2) lặp lại độc lập cho từng loại trong 19 thuốc trừ sâu khảo sát theo cascade hai bước: Bước 1 phát hiện có/không, Bước 2 (chỉ chạy nếu Bước 1 xác định có) phân loại An toàn/Vượt ngưỡng theo MRL của đúng cặp (thực phẩm, thuốc trừ sâu); loại thực phẩm dự đoán được (hoặc nhãn thật khi huấn luyện) là một đầu vào bổ sung cho cả hai bước, vì MRL phụ thuộc vào loại thực phẩm (Mục~\ref {sec:data-thresholds}). Mỗi mô hình được huấn luyện theo kiểm định chéo K-Fold (K-Fold cross-validation, $K{=}5$); dự đoán cuối cùng của một mẫu tổng hợp từ 5 mô hình theo fold bằng bỏ phiếu đa số (majority voting). Kết xuất cuối cùng của hệ thống tổng hợp cả 20 mô hình (1 phân loại thực phẩm + 19$\times $2 an toàn thuốc trừ sâu) qua một phép hợp logic đơn giản, không cần huấn luyện thêm}{figure.1}{}}
+\@writefile{toc}{\xpginauxfiletrue }
+\@writefile{lof}{\xpginauxfiletrue }
+\@writefile{lot}{\xpginauxfiletrue }
+\@writefile{toc}{\selectlanguage *{english}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Phương pháp}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Tổng quan}{1}{subsection.1.1}\protected@file@percent }
+\newlabel{sec:overview}{{1.1}{1}{Tổng quan}{subsection.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Mô-đun Phân loại}{2}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:module-clf}{{1.2}{2}{Mô-đun Phân loại}{subsection.1.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Mô hình XGBoost}{2}{subsection.1.3}\protected@file@percent }
+\newlabel{sec:xgboost}{{1.3}{2}{Mô hình XGBoost}{subsection.1.3}{}}
+\newlabel{eq:xgb}{{1}{2}{Mô hình XGBoost}{equation.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Mô hình LightGBM}{2}{subsection.1.4}\protected@file@percent }
+\newlabel{sec:lightgbm}{{1.4}{2}{Mô hình LightGBM}{subsection.1.4}{}}
+\newlabel{sec:smartnir}{{1.4}{2}{Mô hình LightGBM}{subsection.1.4}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Kiến trúc mô hình SMART-NIR}}{3}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:smartnir}{{2}{3}{Kiến trúc mô hình SMART-NIR}{figure.caption.1}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.4.1}Khối Multi-kernel}{3}{subsubsection.1.4.1}\protected@file@percent }
+\newlabel{eq:multikernel}{{2}{3}{Khối Multi-kernel}{equation.1.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.4.2}Patch + Position Embedding}{3}{subsubsection.1.4.2}\protected@file@percent }
+\newlabel{eq:posemb}{{3}{3}{Patch + Position Embedding}{equation.1.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.4.3}Khối mã hóa Transformer}{3}{subsubsection.1.4.3}\protected@file@percent }
+\newlabel{eq:sa}{{4}{3}{Khối mã hóa Transformer}{equation.1.4}{}}
+\newlabel{eq:mhsa}{{5}{3}{Khối mã hóa Transformer}{equation.1.5}{}}
+\newlabel{eq:dualmlp}{{6}{3}{Khối mã hóa Transformer}{equation.1.6}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.4.4}Bộ phân loại}{3}{subsubsection.1.4.4}\protected@file@percent }
+\newlabel{sec:guideddcnet}{{1.4.4}{3}{Bộ phân loại}{figure.caption.2}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Kiến trúc mô hình KAN}}{4}{figure.caption.2}\protected@file@percent }
+\newlabel{fig:kan}{{3}{4}{Kiến trúc mô hình KAN}{figure.caption.2}{}}
+\newlabel{eq:gdcnet-forward}{{7}{4}{Bộ phân loại}{equation.1.7}{}}
+\newlabel{eq:gdcnet-loss}{{8}{4}{Bộ phân loại}{equation.1.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Dữ liệu}{4}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.0.1}Ngưỡng MRL theo thực phẩm và thuốc trừ sâu}{4}{subsubsection.2.0.1}\protected@file@percent }
+\newlabel{sec:data-thresholds}{{2.0.1}{4}{Ngưỡng MRL theo thực phẩm và thuốc trừ sâu}{subsubsection.2.0.1}{}}
+\newlabel{eq:safety-label}{{9}{4}{Ngưỡng MRL theo thực phẩm và thuốc trừ sâu}{equation.2.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Thống kê mô tả}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:overview-stats}{{2.1}{4}{Thống kê mô tả}{subsection.2.1}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Thông số chung của hai máy quang phổ}}{4}{table.caption.4}\protected@file@percent }
+\newlabel{tab:overview-stats}{{1}{4}{Thông số chung của hai máy quang phổ}{table.caption.4}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Số lượng mẫu theo loại rau củ quả}}{4}{table.caption.5}\protected@file@percent }
+\newlabel{tab:cat-counts}{{2}{4}{Số lượng mẫu theo loại rau củ quả}{table.caption.5}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Kiến trúc tổng quan mô hình GuidedDCNet}}{5}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:guideddcnet}{{4}{5}{Kiến trúc tổng quan mô hình GuidedDCNet}{figure.caption.3}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Số lượng mẫu không chứa / có chứa từng thuốc trừ sâu}}{5}{table.caption.6}\protected@file@percent }
+\newlabel{tab:sub-counts}{{3}{5}{Số lượng mẫu không chứa / có chứa từng thuốc trừ sâu}{table.caption.6}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Trong số mẫu có chứa thuốc trừ sâu: số mẫu An toàn (dưới MRL) và Vượt ngưỡng (trên MRL)}}{5}{table.caption.7}\protected@file@percent }
+\newlabel{tab:sub-safety}{{4}{5}{Trong số mẫu có chứa thuốc trừ sâu: số mẫu An toàn (dưới MRL) và Vượt ngưỡng (trên MRL)}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Trực quan hóa dữ liệu}{6}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Thiết lập thực nghiệm}{6}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Phân loại rau củ quả}{6}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Tiền xử lý dữ liệu}{6}{subsubsection.3.1.1}\protected@file@percent }
+\newlabel{fig:spectra-flamenir}{{5a}{7}{Máy FLAMENIR}{figure.caption.8}{}}
+\newlabel{sub@fig:spectra-flamenir}{{a}{7}{Máy FLAMENIR}{figure.caption.8}{}}
+\newlabel{fig:spectra-oceanfx}{{5b}{7}{Máy OCEANFX}{figure.caption.8}{}}
+\newlabel{sub@fig:spectra-oceanfx}{{b}{7}{Máy OCEANFX}{figure.caption.8}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Phổ NIR trung bình (đường liền) và dải độ lệch chuẩn (vùng tô) theo loại rau củ quả}}{7}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:spectra}{{5}{7}{Phổ NIR trung bình (đường liền) và dải độ lệch chuẩn (vùng tô) theo loại rau củ quả}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Chi tiết huấn luyện}{7}{subsubsection.3.1.2}\protected@file@percent }
+\newlabel{sec:clf-training}{{3.1.2}{7}{Chi tiết huấn luyện}{subsubsection.3.1.2}{}}
+\newlabel{fig:crosstab-flamenir}{{6a}{8}{Máy FLAMENIR}{figure.caption.9}{}}
+\newlabel{sub@fig:crosstab-flamenir}{{a}{8}{Máy FLAMENIR}{figure.caption.9}{}}
+\newlabel{fig:crosstab-oceanfx}{{6b}{8}{Máy OCEANFX}{figure.caption.9}{}}
+\newlabel{sub@fig:crosstab-oceanfx}{{b}{8}{Máy OCEANFX}{figure.caption.9}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Tỉ lệ (\%, một chữ số thập phân) mẫu có chứa từng thuốc trừ sâu theo loại rau củ quả, dùng chung thang màu giữa hai máy để so sánh}}{8}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:crosstab}{{6}{8}{Tỉ lệ (\%, một chữ số thập phân) mẫu có chứa từng thuốc trừ sâu theo loại rau củ quả, dùng chung thang màu giữa hai máy để so sánh}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Đánh giá an toàn thuốc trừ sâu}{8}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Tiền xử lý dữ liệu}{8}{subsubsection.3.2.1}\protected@file@percent }
+\newlabel{sec:stage2-preprocess}{{3.2.1}{8}{Tiền xử lý dữ liệu}{subsubsection.3.2.1}{}}
+\newlabel{fig:safety-flamenir}{{7a}{9}{Máy FLAMENIR}{figure.caption.10}{}}
+\newlabel{sub@fig:safety-flamenir}{{a}{9}{Máy FLAMENIR}{figure.caption.10}{}}
+\newlabel{fig:safety-oceanfx}{{7b}{9}{Máy OCEANFX}{figure.caption.10}{}}
+\newlabel{sub@fig:safety-oceanfx}{{b}{9}{Máy OCEANFX}{figure.caption.10}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Tỉ lệ (\%, làm tròn) Vượt ngưỡng trong số mẫu \emph  {đã phát hiện}, theo từng cặp (thuốc trừ sâu, loại rau củ quả) -- phần tách theo loại thực phẩm của Bảng~\ref {tab:sub-safety}. Ô ``--'' (Chlopyrifos Methyl tại Xà Lách, OCEANFX) không có mẫu phát hiện nào để tính tỉ lệ.}}{9}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:safety-heatmap}{{7}{9}{Tỉ lệ (\%, làm tròn) Vượt ngưỡng trong số mẫu \emph {đã phát hiện}, theo từng cặp (thuốc trừ sâu, loại rau củ quả) -- phần tách theo loại thực phẩm của Bảng~\ref {tab:sub-safety}. Ô ``--'' (Chlopyrifos Methyl tại Xà Lách, OCEANFX) không có mẫu phát hiện nào để tính tỉ lệ}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Chi tiết huấn luyện}{9}{subsubsection.3.2.2}\protected@file@percent }
+\newlabel{sec:stage-training}{{3.2.2}{9}{Chi tiết huấn luyện}{subsubsection.3.2.2}{}}
+\newlabel{eq:food-shrinkage}{{10}{10}{Chi tiết huấn luyện}{equation.3.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Kết quả}{10}{section.4}\protected@file@percent }
+\newlabel{sec:results}{{4}{10}{Kết quả}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Tiêu chí đánh giá}{10}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:metrics}{{4.1}{10}{Tiêu chí đánh giá}{subsection.4.1}{}}
+\newlabel{eq:prf1}{{11}{11}{Tiêu chí đánh giá}{equation.4.11}{}}
+\newlabel{eq:macro}{{12}{11}{Tiêu chí đánh giá}{equation.4.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Máy FLAMENIR}{11}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Phân loại rau củ quả}{11}{subsubsection.4.2.1}\protected@file@percent }
+\newlabel{sec:results-flamenir-clf}{{4.2.1}{11}{Phân loại rau củ quả}{subsubsection.4.2.1}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Phân loại rau củ quả trên máy FLAMENIR (trung bình 5 fold, \%)}}{11}{table.caption.11}\protected@file@percent }
+\newlabel{tab:res-clf-flamenir}{{5}{11}{Phân loại rau củ quả trên máy FLAMENIR (trung bình 5 fold, \%)}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Đánh giá an toàn thuốc trừ sâu}{11}{subsubsection.4.2.2}\protected@file@percent }
+\newlabel{sec:results-flamenir-safety}{{4.2.2}{11}{Đánh giá an toàn thuốc trừ sâu}{subsubsection.4.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Máy OCEANFX}{11}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.1}Phân loại rau củ quả}{11}{subsubsection.4.3.1}\protected@file@percent }
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Bước 1 -- Phát hiện, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}}{12}{table.caption.12}\protected@file@percent }
+\newlabel{tab:res-stage1-flamenir}{{6}{12}{Bước 1 -- Phát hiện, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}{table.caption.12}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Bước 2 -- Phân loại mức độ, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}}{12}{table.caption.13}\protected@file@percent }
+\newlabel{tab:res-stage2-flamenir}{{7}{12}{Bước 2 -- Phân loại mức độ, máy FLAMENIR (trung bình 5 fold theo từng thuốc trừ sâu, \%)}{table.caption.13}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Phân loại rau củ quả trên máy OCEANFX (trung bình 5 fold, \%)}}{13}{table.caption.14}\protected@file@percent }
+\newlabel{tab:res-clf-oceanfx}{{8}{13}{Phân loại rau củ quả trên máy OCEANFX (trung bình 5 fold, \%)}{table.caption.14}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.2}Đánh giá an toàn thuốc trừ sâu}{13}{subsubsection.4.3.2}\protected@file@percent }
+\@writefile{toc}{\xpginauxfilefalse }
+\@writefile{lof}{\xpginauxfilefalse }
+\@writefile{lot}{\xpginauxfilefalse }
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Bước 1 -- Phát hiện, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}}{14}{table.caption.15}\protected@file@percent }
+\newlabel{tab:res-stage1-oceanfx}{{9}{14}{Bước 1 -- Phát hiện, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}{table.caption.15}{}}
+\@writefile{lof}{\setforeignlanguage {english}}
+\@writefile{lot}{\setforeignlanguage {english}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Bước 2 -- Phân loại mức độ, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}}{14}{table.caption.16}\protected@file@percent }
+\newlabel{tab:res-stage2-oceanfx}{{10}{14}{Bước 2 -- Phân loại mức độ, máy OCEANFX (trung bình 5 fold theo từng thuốc trừ sâu, \%)}{table.caption.16}{}}
+\gdef \@abspage@last{14}

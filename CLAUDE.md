@@ -15,17 +15,26 @@ This is a **Near-Infrared Spectroscopy (NIRS) machine learning pipeline** for pe
 # Install dependencies (requires CUDA 12.8 for GPU)
 pip install -r requirements.txt
 
-# Train the category classification model (5-fold CV, StratifiedKFold)
-python classification_engine.py
+# Food-category classification (5-fold CV); METHOD = smartnir | guideddcnet | xgboost | lightgbm
+MACHINE=FLAMENIR METHOD=smartnir python food_classification.py
+MACHINE=OCEANFX BIN=8 METHOD=smartnir python food_classification.py   # OCEANFX: average wavelengths in groups of 8
 
-# Train Stage 1: binary presence/absence detection per substance (XGBoost)
-python regression_stage1_engine.py
+# Step 1: per-substance presence/absence detection; METHOD = xgboost | lightgbm | smartnir | guideddcnet
+MACHINE=FLAMENIR METHOD=lightgbm python stage1_detection.py
 
-# Train Stage 2: concentration regression per substance (deep learning)
-python regression_stage2_engine.py
+# Step 2: per-substance safe / over-MRL classification; METHOD = xgboost | lightgbm | smartnir | guideddcnet
+MACHINE=FLAMENIR METHOD=lightgbm python stage2_safety.py
+
+# Earlier concentration regression (no longer part of the report); METHOD = stage2 | ebar | nirmacnet | xspecmamba
+MACHINE=FLAMENIR METHOD=stage2 python regression.py
 ```
 
-Before running, edit the `machine`/`task` variables inside each script's `if __name__ == "__main__":` block (set `machine` to `"FLAMENIR"` or `"OCEANFX"`), and ensure `../all-dataset/Danang-NIR/{machine}/ALL.csv` exists. A small smoke-test CSV per machine lives at `test/{machine}/sample.csv`. `get_results.ipynb` (root) is used for ad hoc inspection of saved history/checkpoints after training.
+Set `MACHINE` (`FLAMENIR` or `OCEANFX`) and `METHOD` in the environment (see the docstring at the top of each script for the other options); `.env` provides `DATASET_ROOT`. Ensure `../all-dataset/Danang-NIR/{machine}/ALL.csv` exists. A small smoke-test CSV per machine lives at `test/{machine}/sample.csv`. `get_results.ipynb` (root) is used for ad hoc inspection of saved history/checkpoints after training.
+
+## Repository layout
+
+- Root: the Danang pesticide pipeline that the report is about -- `food_classification.py`, `stage1_detection.py`, `stage2_safety.py`, `regression.py` (each merges several methods, selected by `METHOD`), plus `make_holdout_test.py`, `dedup_conflicting_spectra.py`, `evaluate_holdout_stage1.py`, `compare_baselines.py`, `model/`, `dataset/`, `reports/`, `results/`.
+- `additional_experiments/{Grainit,Mango,Rapeseed,OSSL}/`: benchmarks on external NIR datasets (scripts, benchmark CSVs and their own checkpoint/history/data); see its README.
 
 ## Architecture
 
@@ -53,9 +62,9 @@ Both models share the same backbone defined in `model/classification_model.py` a
 
 | Engine | Task | Model | CV Strategy | Key Metric |
 |--------|------|-------|-------------|------------|
-| `classification_engine.py` | Category classification | `SMARTNIRClassifier` | StratifiedKFold-5 | Accuracy |
-| `regression_stage1_engine.py` | Substance presence (binary) | XGBoost (`binary:logistic`) | StratifiedKFold-5 | Accuracy |
-| `regression_stage2_engine.py` | Substance concentration | `SMARTNIRRegressor` | KFold-5 | R² |
+| `food_classification.py` | Category classification | SMART-NIR / GuidedDCNet / XGBoost / LightGBM | StratifiedKFold-5 | Accuracy |
+| `stage1_detection.py` | Substance presence (binary) | XGBoost / LightGBM / SMART-NIR / GuidedDCNet | StratifiedKFold-5 | Accuracy, PR-AUC |
+| `regression.py` (`METHOD=stage2`) | Substance concentration (earlier) | `SMARTNIRRegressor` (+ EBAR, NirMACNet, XSpecMamba) | KFold-5 | R² |
 
 Stage 1 uses XGBoost with StandardScaler (scaler saved via `joblib`); Stage 2 uses the deep learning model with per-fold normalization saved as `.npz`. Both stage 1 and 2 loop over all 19 substances independently (one model per substance per fold) and skip a substance (while still creating its output folders) when there aren't enough valid samples:
 - Stage 1 additionally undersamples the majority class per substance before running CV, so each substance is trained on a balanced (50/50) subset.
@@ -69,4 +78,17 @@ Note the classification and regression engines instantiate `SmartNIR*Config` wit
 - `RegressionNIRSDataset`: Must call `.fit_normalization(train_indices, save_dir)` before use; automatically filters out rows where the target substance is `-1`; raises `ValueError` if no valid samples exist
 
 ### Substances Tracked (19 total)
-`Thiamethoxam, Permethrin, Metalaxyl, Azoxystrobin, Imidaclopird, Difenoconazole, Cypermethrin, Cyhalothrin, Chlorantraniliprol, Chlopyrifos Methyl, Emamectin benzoate, Chlorothalonil, Triadimefon, Cyantraniliprole, Flutolanil, Indoxacarb, Abamectin, Propamocarb.HCL, Chlothianidin`
+IDs and iteration order come from `{DATASET_ROOT}/pesticide_ids.json` (P01–P19), which stage1/stage2 scripts read via `pesticide_name_to_id.keys()` — this is **not** alphabetical and does not match any thematic grouping, so don't assume a different order when a training log seems to "skip" a substance; check `pesticide_ids.json` before suspecting a bug.
+
+| ID | Substance | ID | Substance |
+|----|-----------|----|-----------|
+| P01 | Thiamethoxam | P11 | Triadimefon |
+| P02 | Permethrin | P12 | Cyantraniliprole |
+| P03 | Metalaxyl | P13 | Flutolanil |
+| P04 | Azoxystrobin | P14 | Indoxacarb |
+| P05 | Difenoconazole | P15 | Abamectin |
+| P06 | Cypermethrin | P16 | Propamocarb.HCL |
+| P07 | Cyhalothrin | P17 | Imidaclopird |
+| P08 | Chlorantraniliprol | P18 | Chlopyrifos Methyl |
+| P09 | Emamectin benzoate | P19 | Chlothianidin |
+| P10 | Chlorothalonil | | |

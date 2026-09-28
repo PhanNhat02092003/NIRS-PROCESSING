@@ -1,0 +1,2576 @@
+{
+ "FLAMENIR|XGBoost|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.66,
+   "recall_pos": 0.8578947368421053,
+   "precision_pos": 0.5331741569683065,
+   "f1_macro": 0.6598236094286121,
+   "n_pos": 38.0,
+   "n_pred_pos": 61.2,
+   "pr_auc": 0.7228732199854077,
+   "roc_auc": 0.7857385398981325
+  },
+  "ensemble": {
+   "acc": 0.68,
+   "recall_pos": 0.8947368421052632,
+   "precision_pos": 0.5483870967741935,
+   "f1_macro": 0.68,
+   "n_pos": 38,
+   "n_pred_pos": 62,
+   "pr_auc": 0.7163180386936898,
+   "roc_auc": 0.7848047538200339
+  }
+ },
+ "FLAMENIR|XGBoost|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.708,
+   "recall_pos": 0.8222222222222222,
+   "precision_pos": 0.21142026188465818,
+   "f1_macro": 0.574482062586581,
+   "n_pos": 9.0,
+   "n_pred_pos": 35.0,
+   "pr_auc": 0.35567629861661454,
+   "roc_auc": 0.8161172161172161
+  },
+  "ensemble": {
+   "acc": 0.69,
+   "recall_pos": 0.8888888888888888,
+   "precision_pos": 0.21052631578947367,
+   "f1_macro": 0.5689055764149632,
+   "n_pos": 9,
+   "n_pred_pos": 38,
+   "pr_auc": 0.3626835079266972,
+   "roc_auc": 0.8376068376068375
+  }
+ },
+ "FLAMENIR|XGBoost|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.8939999999999999,
+   "recall_pos": 0.8,
+   "precision_pos": 0.33785014005602243,
+   "f1_macro": 0.7070165185431015,
+   "n_pos": 6.0,
+   "n_pred_pos": 14.2,
+   "pr_auc": 0.7080075235222293,
+   "roc_auc": 0.9439716312056738
+  },
+  "ensemble": {
+   "acc": 0.87,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.29411764705882354,
+   "f1_macro": 0.6806681405060182,
+   "n_pos": 6,
+   "n_pred_pos": 17,
+   "pr_auc": 0.7228327228327228,
+   "roc_auc": 0.9556737588652483
+  }
+ },
+ "FLAMENIR|XGBoost|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.79,
+   "recall_pos": 0.7,
+   "precision_pos": 0.2320939929635582,
+   "f1_macro": 0.6113446213617557,
+   "n_pos": 8.0,
+   "n_pred_pos": 24.2,
+   "pr_auc": 0.5003578687200466,
+   "roc_auc": 0.8502717391304347
+  },
+  "ensemble": {
+   "acc": 0.78,
+   "recall_pos": 0.625,
+   "precision_pos": 0.20833333333333334,
+   "f1_macro": 0.5907738095238095,
+   "n_pos": 8,
+   "n_pred_pos": 24,
+   "pr_auc": 0.519228112895876,
+   "roc_auc": 0.845108695652174
+  }
+ },
+ "FLAMENIR|XGBoost|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.7700000000000001,
+   "recall_pos": 0.9,
+   "precision_pos": 0.1953065134099617,
+   "f1_macro": 0.5910477665226417,
+   "n_pos": 6.0,
+   "n_pred_pos": 27.8,
+   "pr_auc": 0.38344403483683837,
+   "roc_auc": 0.9117021276595747
+  },
+  "ensemble": {
+   "acc": 0.74,
+   "recall_pos": 1.0,
+   "precision_pos": 0.1875,
+   "f1_macro": 0.5776478232618583,
+   "n_pos": 6,
+   "n_pred_pos": 32,
+   "pr_auc": 0.38949579831932774,
+   "roc_auc": 0.9184397163120568
+  }
+ },
+ "FLAMENIR|XGBoost|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.798,
+   "recall_pos": 0.7142857142857143,
+   "precision_pos": 0.2160540184453228,
+   "f1_macro": 0.60629871338807,
+   "n_pos": 7.0,
+   "n_pred_pos": 23.2,
+   "pr_auc": 0.577705111638848,
+   "roc_auc": 0.8672811059907835
+  },
+  "ensemble": {
+   "acc": 0.79,
+   "recall_pos": 0.7142857142857143,
+   "precision_pos": 0.20833333333333334,
+   "f1_macro": 0.5991601450658522,
+   "n_pos": 7,
+   "n_pred_pos": 24,
+   "pr_auc": 0.6056225520511235,
+   "roc_auc": 0.8617511520737327
+  }
+ },
+ "FLAMENIR|XGBoost|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.8779999999999999,
+   "recall_pos": 0.8,
+   "precision_pos": 0.3433446455505279,
+   "f1_macro": 0.704333328264583,
+   "n_pos": 7.0,
+   "n_pred_pos": 16.4,
+   "pr_auc": 0.5591120699046396,
+   "roc_auc": 0.9274961597542243
+  },
+  "ensemble": {
+   "acc": 0.89,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.375,
+   "f1_macro": 0.7297961188897077,
+   "n_pos": 7,
+   "n_pred_pos": 16,
+   "pr_auc": 0.541095495982714,
+   "roc_auc": 0.9324116743471582
+  }
+ },
+ "FLAMENIR|XGBoost|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.8639999999999999,
+   "recall_pos": 0.875,
+   "precision_pos": 0.3592397660818713,
+   "f1_macro": 0.7150479507229104,
+   "n_pos": 8.0,
+   "n_pred_pos": 19.6,
+   "pr_auc": 0.7403519454401807,
+   "roc_auc": 0.9595108695652174
+  },
+  "ensemble": {
+   "acc": 0.86,
+   "recall_pos": 0.875,
+   "precision_pos": 0.35,
+   "f1_macro": 0.7093023255813953,
+   "n_pos": 8,
+   "n_pred_pos": 20,
+   "pr_auc": 0.718037518037518,
+   "roc_auc": 0.9619565217391305
+  }
+ },
+ "FLAMENIR|XGBoost|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.7620000000000001,
+   "recall_pos": 0.7333333333333333,
+   "precision_pos": 0.23792971026007734,
+   "f1_macro": 0.6062620313986729,
+   "n_pos": 9.0,
+   "n_pred_pos": 28.0,
+   "pr_auc": 0.35103099512303093,
+   "roc_auc": 0.8454212454212454
+  },
+  "ensemble": {
+   "acc": 0.75,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.23333333333333334,
+   "f1_macro": 0.6018474279343845,
+   "n_pos": 9,
+   "n_pred_pos": 30,
+   "pr_auc": 0.30581484772260903,
+   "roc_auc": 0.8498168498168499
+  }
+ },
+ "FLAMENIR|XGBoost|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.9120000000000001,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2590909090909091,
+   "f1_macro": 0.681397727697538,
+   "n_pos": 3.0,
+   "n_pred_pos": 11.8,
+   "pr_auc": 0.9344444444444445,
+   "roc_auc": 0.9972508591065292
+  },
+  "ensemble": {
+   "acc": 0.9,
+   "recall_pos": 1.0,
+   "precision_pos": 0.23076923076923078,
+   "f1_macro": 0.6603260869565217,
+   "n_pos": 3,
+   "n_pred_pos": 13,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|XGBoost|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.604,
+   "recall_pos": 0.8,
+   "precision_pos": 0.20489130434782607,
+   "f1_macro": 0.5228821203080553,
+   "n_pos": 12.0,
+   "n_pred_pos": 46.8,
+   "pr_auc": 0.3706354707329857,
+   "roc_auc": 0.7723484848484848
+  },
+  "ensemble": {
+   "acc": 0.6,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.20833333333333334,
+   "f1_macro": 0.5238095238095238,
+   "n_pos": 12,
+   "n_pred_pos": 48,
+   "pr_auc": 0.40884672357716106,
+   "roc_auc": 0.7708333333333333
+  }
+ },
+ "FLAMENIR|XGBoost|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.642,
+   "recall_pos": 0.82,
+   "precision_pos": 0.19477073314282617,
+   "f1_macro": 0.5361411854425849,
+   "n_pos": 10.0,
+   "n_pred_pos": 42.2,
+   "pr_auc": 0.35837395729665944,
+   "roc_auc": 0.8073333333333335
+  },
+  "ensemble": {
+   "acc": 0.64,
+   "recall_pos": 0.9,
+   "precision_pos": 0.20454545454545456,
+   "f1_macro": 0.54337899543379,
+   "n_pos": 10,
+   "n_pred_pos": 44,
+   "pr_auc": 0.39061453374059363,
+   "roc_auc": 0.8122222222222222
+  }
+ },
+ "FLAMENIR|XGBoost|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.96,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.48979060581671163,
+   "n_pos": 1.0,
+   "n_pred_pos": 3.0,
+   "pr_auc": 0.09512626262626263,
+   "roc_auc": 0.8868686868686868
+  },
+  "ensemble": {
+   "acc": 0.96,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.4897959183673469,
+   "n_pos": 1,
+   "n_pred_pos": 3,
+   "pr_auc": 0.08333333333333333,
+   "roc_auc": 0.8888888888888888
+  }
+ },
+ "FLAMENIR|XGBoost|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.794,
+   "recall_pos": 0.9,
+   "precision_pos": 0.1506133866133866,
+   "f1_macro": 0.569062027826627,
+   "n_pos": 4.0,
+   "n_pred_pos": 23.8,
+   "pr_auc": 0.24906479120294905,
+   "roc_auc": 0.9083333333333334
+  },
+  "ensemble": {
+   "acc": 0.79,
+   "recall_pos": 1.0,
+   "precision_pos": 0.16,
+   "f1_macro": 0.5765275257108288,
+   "n_pos": 4,
+   "n_pred_pos": 25,
+   "pr_auc": 0.28674242424242424,
+   "roc_auc": 0.9401041666666667
+  }
+ },
+ "FLAMENIR|XGBoost|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.72,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.21360071301247768,
+   "f1_macro": 0.5786008498660677,
+   "n_pos": 9.0,
+   "n_pred_pos": 33.0,
+   "pr_auc": 0.46194489517933796,
+   "roc_auc": 0.8661782661782661
+  },
+  "ensemble": {
+   "acc": 0.73,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.21875,
+   "f1_macro": 0.5858260469397147,
+   "n_pos": 9,
+   "n_pred_pos": 32,
+   "pr_auc": 0.5698362665265738,
+   "roc_auc": 0.8656898656898657
+  }
+ },
+ "FLAMENIR|XGBoost|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.984,
+   "recall_pos": 0.2,
+   "precision_pos": 0.2,
+   "f1_macro": 0.595959595959596,
+   "n_pos": 1.0,
+   "n_pred_pos": 1.0,
+   "pr_auc": 0.4542857142857143,
+   "roc_auc": 0.9616161616161616
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.494949494949495,
+   "n_pos": 1,
+   "n_pred_pos": 1,
+   "pr_auc": 0.5,
+   "roc_auc": 0.98989898989899
+  }
+ },
+ "FLAMENIR|XGBoost|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.662,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.15435655167362486,
+   "f1_macro": 0.5211070538474815,
+   "n_pos": 7.0,
+   "n_pred_pos": 38.8,
+   "pr_auc": 0.18469989542592416,
+   "roc_auc": 0.7972350230414746
+  },
+  "ensemble": {
+   "acc": 0.66,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.15384615384615385,
+   "f1_macro": 0.5200451722190853,
+   "n_pos": 7,
+   "n_pred_pos": 39,
+   "pr_auc": 0.17503690625810442,
+   "roc_auc": 0.8033794162826421
+  }
+ },
+ "FLAMENIR|XGBoost|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.898,
+   "recall_pos": 1.0,
+   "precision_pos": 0.16937950937950935,
+   "f1_macro": 0.6167152611876306,
+   "n_pos": 2.0,
+   "n_pred_pos": 12.2,
+   "pr_auc": 0.9666666666666666,
+   "roc_auc": 0.9989795918367346
+  },
+  "ensemble": {
+   "acc": 0.89,
+   "recall_pos": 1.0,
+   "precision_pos": 0.15384615384615385,
+   "f1_macro": 0.6036036036036037,
+   "n_pos": 2,
+   "n_pred_pos": 13,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|XGBoost|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.7779999999999999,
+   "recall_pos": 0.825,
+   "precision_pos": 0.2420405982905983,
+   "f1_macro": 0.6192940910012568,
+   "n_pos": 8.0,
+   "n_pred_pos": 27.4,
+   "pr_auc": 0.6035830757172624,
+   "roc_auc": 0.9051630434782609
+  },
+  "ensemble": {
+   "acc": 0.79,
+   "recall_pos": 0.875,
+   "precision_pos": 0.25925925925925924,
+   "f1_macro": 0.6363636363636364,
+   "n_pos": 8,
+   "n_pred_pos": 27,
+   "pr_auc": 0.6146680216802167,
+   "roc_auc": 0.9225543478260869
+  }
+ },
+ "FLAMENIR|LightGBM|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.6639999999999999,
+   "recall_pos": 0.8368421052631578,
+   "precision_pos": 0.537487167488045,
+   "f1_macro": 0.6636923089022406,
+   "n_pos": 38.0,
+   "n_pred_pos": 59.2,
+   "pr_auc": 0.7175216285571746,
+   "roc_auc": 0.7828522920203735
+  },
+  "ensemble": {
+   "acc": 0.64,
+   "recall_pos": 0.8421052631578947,
+   "precision_pos": 0.5161290322580645,
+   "f1_macro": 0.64,
+   "n_pos": 38,
+   "n_pred_pos": 62,
+   "pr_auc": 0.7129559980572867,
+   "roc_auc": 0.7835314091680815
+  }
+ },
+ "FLAMENIR|LightGBM|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.694,
+   "recall_pos": 0.7999999999999999,
+   "precision_pos": 0.19966108966108967,
+   "f1_macro": 0.5610626088886959,
+   "n_pos": 9.0,
+   "n_pred_pos": 36.0,
+   "pr_auc": 0.3921558022417713,
+   "roc_auc": 0.8188034188034189
+  },
+  "ensemble": {
+   "acc": 0.68,
+   "recall_pos": 1.0,
+   "precision_pos": 0.21951219512195122,
+   "f1_macro": 0.5733333333333333,
+   "n_pos": 9,
+   "n_pred_pos": 41,
+   "pr_auc": 0.3652999702999703,
+   "roc_auc": 0.8437118437118438
+  }
+ },
+ "FLAMENIR|LightGBM|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.8959999999999999,
+   "recall_pos": 0.8,
+   "precision_pos": 0.34971139971139975,
+   "f1_macro": 0.712931103781443,
+   "n_pos": 6.0,
+   "n_pred_pos": 14.0,
+   "pr_auc": 0.6447317818083946,
+   "roc_auc": 0.925177304964539
+  },
+  "ensemble": {
+   "acc": 0.9,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.35714285714285715,
+   "f1_macro": 0.7222222222222222,
+   "n_pos": 6,
+   "n_pred_pos": 14,
+   "pr_auc": 0.6555555555555554,
+   "roc_auc": 0.9308510638297872
+  }
+ },
+ "FLAMENIR|LightGBM|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.79,
+   "recall_pos": 0.725,
+   "precision_pos": 0.23763210702341137,
+   "f1_macro": 0.615798897545133,
+   "n_pos": 8.0,
+   "n_pred_pos": 24.6,
+   "pr_auc": 0.4979507144887573,
+   "roc_auc": 0.8440217391304348
+  },
+  "ensemble": {
+   "acc": 0.74,
+   "recall_pos": 0.625,
+   "precision_pos": 0.17857142857142858,
+   "f1_macro": 0.559620596205962,
+   "n_pos": 8,
+   "n_pred_pos": 28,
+   "pr_auc": 0.5079606549364614,
+   "roc_auc": 0.8383152173913043
+  }
+ },
+ "FLAMENIR|LightGBM|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.78,
+   "recall_pos": 0.9666666666666668,
+   "precision_pos": 0.21135531135531135,
+   "f1_macro": 0.6071968066294007,
+   "n_pos": 6.0,
+   "n_pred_pos": 27.6,
+   "pr_auc": 0.3988729696229696,
+   "roc_auc": 0.9184397163120568
+  },
+  "ensemble": {
+   "acc": 0.78,
+   "recall_pos": 1.0,
+   "precision_pos": 0.21428571428571427,
+   "f1_macro": 0.6102055279943303,
+   "n_pos": 6,
+   "n_pred_pos": 28,
+   "pr_auc": 0.3764748677248677,
+   "roc_auc": 0.9219858156028369
+  }
+ },
+ "FLAMENIR|LightGBM|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.812,
+   "recall_pos": 0.7714285714285715,
+   "precision_pos": 0.23988311688311686,
+   "f1_macro": 0.6276029013289505,
+   "n_pos": 7.0,
+   "n_pred_pos": 22.6,
+   "pr_auc": 0.5225793382807831,
+   "roc_auc": 0.8586789554531491
+  },
+  "ensemble": {
+   "acc": 0.8,
+   "recall_pos": 0.7142857142857143,
+   "precision_pos": 0.21739130434782608,
+   "f1_macro": 0.6078431372549019,
+   "n_pos": 7,
+   "n_pred_pos": 23,
+   "pr_auc": 0.506605222734255,
+   "roc_auc": 0.8663594470046083
+  }
+ },
+ "FLAMENIR|LightGBM|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.8720000000000001,
+   "recall_pos": 0.7142857142857142,
+   "precision_pos": 0.31528459156942124,
+   "f1_macro": 0.6818344609026517,
+   "n_pos": 7.0,
+   "n_pred_pos": 15.8,
+   "pr_auc": 0.5236768766783664,
+   "roc_auc": 0.9192012288786483
+  },
+  "ensemble": {
+   "acc": 0.89,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.375,
+   "f1_macro": 0.7297961188897077,
+   "n_pos": 7,
+   "n_pred_pos": 16,
+   "pr_auc": 0.5174408924408924,
+   "roc_auc": 0.9216589861751152
+  }
+ },
+ "FLAMENIR|LightGBM|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.884,
+   "recall_pos": 0.925,
+   "precision_pos": 0.40238930659983285,
+   "f1_macro": 0.7462806560245125,
+   "n_pos": 8.0,
+   "n_pred_pos": 18.4,
+   "pr_auc": 0.7746294351073763,
+   "roc_auc": 0.9690217391304348
+  },
+  "ensemble": {
+   "acc": 0.86,
+   "recall_pos": 1.0,
+   "precision_pos": 0.36363636363636365,
+   "f1_macro": 0.7254901960784313,
+   "n_pos": 8,
+   "n_pred_pos": 22,
+   "pr_auc": 0.7772759103641457,
+   "roc_auc": 0.9741847826086957
+  }
+ },
+ "FLAMENIR|LightGBM|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.766,
+   "recall_pos": 0.7333333333333333,
+   "precision_pos": 0.23952745849297571,
+   "f1_macro": 0.6089046695193214,
+   "n_pos": 9.0,
+   "n_pred_pos": 27.6,
+   "pr_auc": 0.3684634859657773,
+   "roc_auc": 0.8512820512820513
+  },
+  "ensemble": {
+   "acc": 0.77,
+   "recall_pos": 0.6666666666666666,
+   "precision_pos": 0.23076923076923078,
+   "f1_macro": 0.6017316017316017,
+   "n_pos": 9,
+   "n_pred_pos": 26,
+   "pr_auc": 0.3605022564581388,
+   "roc_auc": 0.8595848595848595
+  }
+ },
+ "FLAMENIR|LightGBM|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.924,
+   "recall_pos": 1.0,
+   "precision_pos": 0.28575757575757577,
+   "f1_macro": 0.7014663115959092,
+   "n_pos": 3.0,
+   "n_pred_pos": 10.6,
+   "pr_auc": 0.9833333333333332,
+   "roc_auc": 0.9993127147766323
+  },
+  "ensemble": {
+   "acc": 0.92,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2727272727272727,
+   "f1_macro": 0.6927803379416283,
+   "n_pos": 3,
+   "n_pred_pos": 11,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|LightGBM|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.6119999999999999,
+   "recall_pos": 0.7500000000000001,
+   "precision_pos": 0.20086349370259615,
+   "f1_macro": 0.5228724619918352,
+   "n_pos": 12.0,
+   "n_pred_pos": 44.8,
+   "pr_auc": 0.3696675303318082,
+   "roc_auc": 0.7710227272727274
+  },
+  "ensemble": {
+   "acc": 0.59,
+   "recall_pos": 0.75,
+   "precision_pos": 0.19148936170212766,
+   "f1_macro": 0.5071523019593701,
+   "n_pos": 12,
+   "n_pred_pos": 47,
+   "pr_auc": 0.3659320438732204,
+   "roc_auc": 0.771780303030303
+  }
+ },
+ "FLAMENIR|LightGBM|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.63,
+   "recall_pos": 0.7799999999999999,
+   "precision_pos": 0.1830564784053156,
+   "f1_macro": 0.5227481413465241,
+   "n_pos": 10.0,
+   "n_pred_pos": 42.6,
+   "pr_auc": 0.3479779041311546,
+   "roc_auc": 0.7913333333333333
+  },
+  "ensemble": {
+   "acc": 0.64,
+   "recall_pos": 0.8,
+   "precision_pos": 0.19047619047619047,
+   "f1_macro": 0.5322245322245323,
+   "n_pos": 10,
+   "n_pred_pos": 42,
+   "pr_auc": 0.39701557371200225,
+   "roc_auc": 0.8111111111111111
+  }
+ },
+ "FLAMENIR|LightGBM|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.954,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.4882048077924367,
+   "n_pos": 1.0,
+   "n_pred_pos": 3.6,
+   "pr_auc": 0.08377247752247753,
+   "roc_auc": 0.8565656565656565
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.48717948717948717,
+   "n_pos": 1,
+   "n_pred_pos": 4,
+   "pr_auc": 0.09090909090909091,
+   "roc_auc": 0.898989898989899
+  }
+ },
+ "FLAMENIR|LightGBM|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.8219999999999998,
+   "recall_pos": 0.95,
+   "precision_pos": 0.17750988142292493,
+   "f1_macro": 0.5985109285512913,
+   "n_pos": 4.0,
+   "n_pred_pos": 21.4,
+   "pr_auc": 0.2370432606609077,
+   "roc_auc": 0.9135416666666666
+  },
+  "ensemble": {
+   "acc": 0.8,
+   "recall_pos": 1.0,
+   "precision_pos": 0.16666666666666666,
+   "f1_macro": 0.584717607973422,
+   "n_pos": 4,
+   "n_pred_pos": 24,
+   "pr_auc": 0.25707070707070706,
+   "roc_auc": 0.9296875
+  }
+ },
+ "FLAMENIR|LightGBM|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.748,
+   "recall_pos": 0.8222222222222222,
+   "precision_pos": 0.23875312262409037,
+   "f1_macro": 0.6060310660746753,
+   "n_pos": 9.0,
+   "n_pred_pos": 31.0,
+   "pr_auc": 0.4995078364826237,
+   "roc_auc": 0.8735042735042734
+  },
+  "ensemble": {
+   "acc": 0.75,
+   "recall_pos": 0.8888888888888888,
+   "precision_pos": 0.25,
+   "f1_macro": 0.6165055990182544,
+   "n_pos": 9,
+   "n_pred_pos": 32,
+   "pr_auc": 0.5702255109231853,
+   "roc_auc": 0.8888888888888888
+  }
+ },
+ "FLAMENIR|LightGBM|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.982,
+   "recall_pos": 0.2,
+   "precision_pos": 0.1,
+   "f1_macro": 0.5621186484130647,
+   "n_pos": 1.0,
+   "n_pred_pos": 1.2,
+   "pr_auc": 0.32575757575757575,
+   "roc_auc": 0.9434343434343434
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 0.0,
+   "precision_pos": 0.0,
+   "f1_macro": 0.494949494949495,
+   "n_pos": 1,
+   "n_pred_pos": 1,
+   "pr_auc": 0.5,
+   "roc_auc": 0.98989898989899
+  }
+ },
+ "FLAMENIR|LightGBM|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.682,
+   "recall_pos": 0.9142857142857143,
+   "precision_pos": 0.17060278902384166,
+   "f1_macro": 0.5413777357682609,
+   "n_pos": 7.0,
+   "n_pred_pos": 37.6,
+   "pr_auc": 0.17971889999812268,
+   "roc_auc": 0.7834101382488481
+  },
+  "ensemble": {
+   "acc": 0.66,
+   "recall_pos": 1.0,
+   "precision_pos": 0.17073170731707318,
+   "f1_macro": 0.5339912280701754,
+   "n_pos": 7,
+   "n_pred_pos": 41,
+   "pr_auc": 0.1733451072736787,
+   "roc_auc": 0.8033794162826422
+  }
+ },
+ "FLAMENIR|LightGBM|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.89,
+   "recall_pos": 1.0,
+   "precision_pos": 0.15623543123543124,
+   "f1_macro": 0.6051228370013948,
+   "n_pos": 2.0,
+   "n_pred_pos": 13.0,
+   "pr_auc": 0.9333333333333332,
+   "roc_auc": 0.9979591836734694
+  },
+  "ensemble": {
+   "acc": 0.89,
+   "recall_pos": 1.0,
+   "precision_pos": 0.15384615384615385,
+   "f1_macro": 0.6036036036036037,
+   "n_pos": 2,
+   "n_pred_pos": 13,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|LightGBM|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.7619999999999999,
+   "recall_pos": 0.875,
+   "precision_pos": 0.2365185676392573,
+   "f1_macro": 0.6125176501299437,
+   "n_pos": 8.0,
+   "n_pred_pos": 29.8,
+   "pr_auc": 0.5933482402492214,
+   "roc_auc": 0.9105978260869565
+  },
+  "ensemble": {
+   "acc": 0.76,
+   "recall_pos": 0.875,
+   "precision_pos": 0.23333333333333334,
+   "f1_macro": 0.6101364522417154,
+   "n_pos": 8,
+   "n_pred_pos": 30,
+   "pr_auc": 0.6245506535947712,
+   "roc_auc": 0.9279891304347827
+  }
+ },
+ "FLAMENIR|SMART-NIR|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.884,
+   "recall_pos": 0.8368421052631578,
+   "precision_pos": 0.8548597064386538,
+   "f1_macro": 0.8763008522436406,
+   "n_pos": 38.0,
+   "n_pred_pos": 37.2,
+   "pr_auc": 0.9331524155218919,
+   "roc_auc": 0.950848896434635
+  },
+  "ensemble": {
+   "acc": 0.92,
+   "recall_pos": 0.9210526315789473,
+   "precision_pos": 0.875,
+   "f1_macro": 0.9159310634720471,
+   "n_pos": 38,
+   "n_pred_pos": 40,
+   "pr_auc": 0.9518450744025776,
+   "roc_auc": 0.9664685908319184
+  }
+ },
+ "FLAMENIR|SMART-NIR|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.898,
+   "recall_pos": 0.7555555555555554,
+   "precision_pos": 0.45675500969618615,
+   "f1_macro": 0.7551054936122814,
+   "n_pos": 9.0,
+   "n_pred_pos": 14.8,
+   "pr_auc": 0.7588097475625482,
+   "roc_auc": 0.9144078144078144
+  },
+  "ensemble": {
+   "acc": 0.91,
+   "recall_pos": 0.8888888888888888,
+   "precision_pos": 0.5,
+   "f1_macro": 0.7942857142857143,
+   "n_pos": 9,
+   "n_pred_pos": 16,
+   "pr_auc": 0.8982823403113258,
+   "roc_auc": 0.9536019536019535
+  }
+ },
+ "FLAMENIR|SMART-NIR|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.9480000000000001,
+   "recall_pos": 0.8,
+   "precision_pos": 0.5666666666666667,
+   "f1_macro": 0.813494156275258,
+   "n_pos": 6.0,
+   "n_pred_pos": 8.8,
+   "pr_auc": 0.7211564723590586,
+   "roc_auc": 0.924645390070922
+  },
+  "ensemble": {
+   "acc": 0.91,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.38461538461538464,
+   "f1_macro": 0.7382960162838035,
+   "n_pos": 6,
+   "n_pred_pos": 13,
+   "pr_auc": 0.8263888888888888,
+   "roc_auc": 0.9237588652482269
+  }
+ },
+ "FLAMENIR|SMART-NIR|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.984,
+   "recall_pos": 0.875,
+   "precision_pos": 0.9214285714285714,
+   "f1_macro": 0.943997258127693,
+   "n_pos": 8.0,
+   "n_pred_pos": 7.6,
+   "pr_auc": 0.9694715007215008,
+   "roc_auc": 0.9967391304347826
+  },
+  "ensemble": {
+   "acc": 0.99,
+   "recall_pos": 0.875,
+   "precision_pos": 1.0,
+   "f1_macro": 0.963963963963964,
+   "n_pos": 8,
+   "n_pred_pos": 7,
+   "pr_auc": 0.9861111111111112,
+   "roc_auc": 0.998641304347826
+  }
+ },
+ "FLAMENIR|SMART-NIR|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.93,
+   "recall_pos": 0.6333333333333333,
+   "precision_pos": 0.45206349206349206,
+   "f1_macro": 0.7439460319286655,
+   "n_pos": 6.0,
+   "n_pred_pos": 8.6,
+   "pr_auc": 0.6387448688106268,
+   "roc_auc": 0.8317375886524824
+  },
+  "ensemble": {
+   "acc": 0.91,
+   "recall_pos": 0.6666666666666666,
+   "precision_pos": 0.36363636363636365,
+   "f1_macro": 0.7107039537126325,
+   "n_pos": 6,
+   "n_pred_pos": 11,
+   "pr_auc": 0.6572649572649572,
+   "roc_auc": 0.8333333333333334
+  }
+ },
+ "FLAMENIR|SMART-NIR|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.992,
+   "recall_pos": 0.9428571428571428,
+   "precision_pos": 0.9464285714285715,
+   "f1_macro": 0.9692047426392778,
+   "n_pos": 7.0,
+   "n_pred_pos": 7.0,
+   "pr_auc": 0.9769480519480519,
+   "roc_auc": 0.995084485407066
+  },
+  "ensemble": {
+   "acc": 0.99,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 1.0,
+   "f1_macro": 0.9588646647470177,
+   "n_pos": 7,
+   "n_pred_pos": 6,
+   "pr_auc": 0.9999999999999998,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.97,
+   "recall_pos": 0.8,
+   "precision_pos": 0.7857142857142857,
+   "f1_macro": 0.8867009533930579,
+   "n_pos": 7.0,
+   "n_pred_pos": 7.2,
+   "pr_auc": 0.8667314562188511,
+   "roc_auc": 0.9474654377880185
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.8571428571428571,
+   "f1_macro": 0.9231950844854071,
+   "n_pos": 7,
+   "n_pred_pos": 7,
+   "pr_auc": 0.8956043956043955,
+   "roc_auc": 0.9708141321044547
+  }
+ },
+ "FLAMENIR|SMART-NIR|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.978,
+   "recall_pos": 0.975,
+   "precision_pos": 0.8020202020202019,
+   "f1_macro": 0.9329621303614661,
+   "n_pos": 8.0,
+   "n_pred_pos": 9.8,
+   "pr_auc": 0.9778048340548342,
+   "roc_auc": 0.9978260869565216
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.8,
+   "f1_macro": 0.938949938949939,
+   "n_pos": 8,
+   "n_pred_pos": 10,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.8720000000000001,
+   "recall_pos": 0.9111111111111111,
+   "precision_pos": 0.41072917588087865,
+   "f1_macro": 0.7445242224847082,
+   "n_pos": 9.0,
+   "n_pred_pos": 20.2,
+   "pr_auc": 0.828984217607406,
+   "roc_auc": 0.9697191697191698
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 1.0,
+   "precision_pos": 0.36,
+   "f1_macro": 0.7165131112686038,
+   "n_pos": 9,
+   "n_pred_pos": 25,
+   "pr_auc": 0.8456209969367865,
+   "roc_auc": 0.9768009768009768
+  }
+ },
+ "FLAMENIR|SMART-NIR|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.966,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4807142857142857,
+   "f1_macro": 0.8139449941521792,
+   "n_pos": 3.0,
+   "n_pred_pos": 6.4,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.6,
+   "f1_macro": 0.8697916666666667,
+   "n_pos": 3,
+   "n_pred_pos": 5,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.924,
+   "recall_pos": 0.7666666666666667,
+   "precision_pos": 0.6785214785214785,
+   "f1_macro": 0.8357700432813623,
+   "n_pos": 12.0,
+   "n_pred_pos": 14.0,
+   "pr_auc": 0.8105506227687563,
+   "roc_auc": 0.9470643939393939
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.9166666666666666,
+   "precision_pos": 0.7333333333333333,
+   "f1_macro": 0.8929565403553843,
+   "n_pos": 12,
+   "n_pred_pos": 15,
+   "pr_auc": 0.8460846822259865,
+   "roc_auc": 0.9753787878787878
+  }
+ },
+ "FLAMENIR|SMART-NIR|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.882,
+   "recall_pos": 0.8400000000000001,
+   "precision_pos": 0.456844070961718,
+   "f1_macro": 0.7609300248092097,
+   "n_pos": 10.0,
+   "n_pred_pos": 18.6,
+   "pr_auc": 0.8332756776465793,
+   "roc_auc": 0.9502222222222223
+  },
+  "ensemble": {
+   "acc": 0.87,
+   "recall_pos": 0.8,
+   "precision_pos": 0.42105263157894735,
+   "f1_macro": 0.7378503730590844,
+   "n_pos": 10,
+   "n_pred_pos": 19,
+   "pr_auc": 0.8565907522429261,
+   "roc_auc": 0.9555555555555556
+  }
+ },
+ "FLAMENIR|SMART-NIR|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.97,
+   "recall_pos": 0.8,
+   "precision_pos": 0.20666666666666664,
+   "f1_macro": 0.6556513037834479,
+   "n_pos": 1.0,
+   "n_pred_pos": 3.6,
+   "pr_auc": 0.6666666666666667,
+   "roc_auc": 0.9919191919191921
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.3333333333333333,
+   "f1_macro": 0.7448979591836735,
+   "n_pos": 1,
+   "n_pred_pos": 3,
+   "pr_auc": 0.5,
+   "roc_auc": 0.98989898989899
+  }
+ },
+ "FLAMENIR|SMART-NIR|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.982,
+   "recall_pos": 0.95,
+   "precision_pos": 0.7276190476190476,
+   "f1_macro": 0.903548654278883,
+   "n_pos": 4.0,
+   "n_pred_pos": 5.4,
+   "pr_auc": 0.921904761904762,
+   "roc_auc": 0.9953125
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.6666666666666666,
+   "f1_macro": 0.8947368421052632,
+   "n_pos": 4,
+   "n_pred_pos": 6,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.8939999999999999,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4612918660287081,
+   "f1_macro": 0.7844163015385771,
+   "n_pos": 9.0,
+   "n_pred_pos": 19.6,
+   "pr_auc": 0.9388099246432582,
+   "roc_auc": 0.9914529914529915
+  },
+  "ensemble": {
+   "acc": 0.85,
+   "recall_pos": 1.0,
+   "precision_pos": 0.375,
+   "f1_macro": 0.7278170930865542,
+   "n_pos": 9,
+   "n_pred_pos": 24,
+   "pr_auc": 0.9797979797979799,
+   "roc_auc": 0.9975579975579976
+  }
+ },
+ "FLAMENIR|SMART-NIR|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.986,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4333333333333333,
+   "f1_macro": 0.7964363410338755,
+   "n_pos": 1.0,
+   "n_pred_pos": 2.4,
+   "pr_auc": 0.9,
+   "roc_auc": 0.997979797979798
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.3333333333333333,
+   "f1_macro": 0.7448979591836735,
+   "n_pos": 1,
+   "n_pred_pos": 3,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.882,
+   "recall_pos": 0.9142857142857143,
+   "precision_pos": 0.3659391124871001,
+   "f1_macro": 0.7268785862154193,
+   "n_pos": 7.0,
+   "n_pred_pos": 17.6,
+   "pr_auc": 0.7866072419643848,
+   "roc_auc": 0.9635944700460829
+  },
+  "ensemble": {
+   "acc": 0.86,
+   "recall_pos": 1.0,
+   "precision_pos": 0.3333333333333333,
+   "f1_macro": 0.7093023255813953,
+   "n_pos": 7,
+   "n_pred_pos": 21,
+   "pr_auc": 0.9004329004329004,
+   "roc_auc": 0.989247311827957
+  }
+ },
+ "FLAMENIR|SMART-NIR|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.9399999999999998,
+   "recall_pos": 1.0,
+   "precision_pos": 0.25317460317460316,
+   "f1_macro": 0.6858152573776712,
+   "n_pos": 2.0,
+   "n_pred_pos": 8.0,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 0.93,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2222222222222222,
+   "f1_macro": 0.6632996632996633,
+   "n_pos": 2,
+   "n_pred_pos": 9,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|SMART-NIR|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.942,
+   "recall_pos": 0.95,
+   "precision_pos": 0.6244444444444445,
+   "f1_macro": 0.8548484230393136,
+   "n_pos": 8.0,
+   "n_pred_pos": 13.0,
+   "pr_auc": 0.9519146825396826,
+   "roc_auc": 0.9923913043478262
+  },
+  "ensemble": {
+   "acc": 0.96,
+   "recall_pos": 1.0,
+   "precision_pos": 0.6666666666666666,
+   "f1_macro": 0.8888888888888888,
+   "n_pos": 8,
+   "n_pred_pos": 12,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "FLAMENIR|GuidedDCNet|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.6499999999999999,
+   "recall_pos": 0.8368421052631578,
+   "precision_pos": 0.5518205495944475,
+   "f1_macro": 0.6410663024892622,
+   "n_pos": 38.0,
+   "n_pred_pos": 60.6,
+   "pr_auc": 0.7920704227581223,
+   "roc_auc": 0.8218166383701189
+  },
+  "ensemble": {
+   "acc": 0.72,
+   "recall_pos": 0.9736842105263158,
+   "precision_pos": 0.578125,
+   "f1_macro": 0.7198879551820728,
+   "n_pos": 38,
+   "n_pred_pos": 64,
+   "pr_auc": 0.9226626038559423,
+   "roc_auc": 0.9367572156196944
+  }
+ },
+ "FLAMENIR|GuidedDCNet|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.968,
+   "recall_pos": 0.775,
+   "precision_pos": 0.8245238095238095,
+   "f1_macro": 0.8880278096091562,
+   "n_pos": 8.0,
+   "n_pred_pos": 7.6,
+   "pr_auc": 0.7395785395804746,
+   "roc_auc": 0.941304347826087
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 0.625,
+   "precision_pos": 1.0,
+   "f1_macro": 0.8765939942410531,
+   "n_pos": 8,
+   "n_pred_pos": 5,
+   "pr_auc": 0.9416666666666667,
+   "roc_auc": 0.9904891304347826
+  }
+ },
+ "FLAMENIR|GuidedDCNet|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.2,
+   "recall_pos": 1.0,
+   "precision_pos": 0.025771852325159893,
+   "f1_macro": 0.16141319224447587,
+   "n_pos": 2.0,
+   "n_pred_pos": 82.0,
+   "pr_auc": 0.7333333333333333,
+   "roc_auc": 0.9918367346938777
+  },
+  "ensemble": {
+   "acc": 0.02,
+   "recall_pos": 1.0,
+   "precision_pos": 0.02,
+   "f1_macro": 0.0196078431372549,
+   "n_pos": 2,
+   "n_pred_pos": 100,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|XGBoost|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.764,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.21024771792291258,
+   "f1_macro": 0.5969624979357483,
+   "n_pos": 7.0,
+   "n_pred_pos": 28.6,
+   "pr_auc": 0.6240541982558788,
+   "roc_auc": 0.9238095238095239
+  },
+  "ensemble": {
+   "acc": 0.76,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.20689655172413793,
+   "f1_macro": 0.5934959349593496,
+   "n_pos": 7,
+   "n_pred_pos": 29,
+   "pr_auc": 0.6684411684411684,
+   "roc_auc": 0.9308755760368663
+  }
+ },
+ "OCEANFX|XGBoost|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.748,
+   "recall_pos": 0.8,
+   "precision_pos": 0.42995647469331677,
+   "f1_macro": 0.6913584269529484,
+   "n_pos": 20.0,
+   "n_pred_pos": 37.2,
+   "pr_auc": 0.5641082232030394,
+   "roc_auc": 0.8318749999999999
+  },
+  "ensemble": {
+   "acc": 0.75,
+   "recall_pos": 0.85,
+   "precision_pos": 0.4358974358974359,
+   "f1_macro": 0.6994831109508355,
+   "n_pos": 20,
+   "n_pred_pos": 39,
+   "pr_auc": 0.5602007438459087,
+   "roc_auc": 0.83375
+  }
+ },
+ "OCEANFX|XGBoost|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.826,
+   "recall_pos": 0.65,
+   "precision_pos": 0.2636290214026114,
+   "f1_macro": 0.6366044316097237,
+   "n_pos": 8.0,
+   "n_pred_pos": 19.8,
+   "pr_auc": 0.5603711532901288,
+   "roc_auc": 0.8766304347826088
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 0.625,
+   "precision_pos": 0.2777777777777778,
+   "f1_macro": 0.6463306808134395,
+   "n_pos": 8,
+   "n_pred_pos": 18,
+   "pr_auc": 0.5721764318375572,
+   "roc_auc": 0.8967391304347826
+  }
+ },
+ "OCEANFX|XGBoost|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.944,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.7696078431372549,
+   "f1_macro": 0.8888207659725641,
+   "n_pos": 14.0,
+   "n_pred_pos": 15.6,
+   "pr_auc": 0.8857679075801588,
+   "roc_auc": 0.9730897009966777
+  },
+  "ensemble": {
+   "acc": 0.94,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.75,
+   "f1_macro": 0.8823529411764706,
+   "n_pos": 14,
+   "n_pred_pos": 16,
+   "pr_auc": 0.894931539049186,
+   "roc_auc": 0.9759136212624585
+  }
+ },
+ "OCEANFX|XGBoost|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.908,
+   "recall_pos": 0.6333333333333332,
+   "precision_pos": 0.3527272727272727,
+   "f1_macro": 0.7013577348259332,
+   "n_pos": 6.0,
+   "n_pred_pos": 10.8,
+   "pr_auc": 0.6657301325619632,
+   "roc_auc": 0.9283687943262413
+  },
+  "ensemble": {
+   "acc": 0.9,
+   "recall_pos": 0.6666666666666666,
+   "precision_pos": 0.3333333333333333,
+   "f1_macro": 0.6947496947496947,
+   "n_pos": 6,
+   "n_pred_pos": 12,
+   "pr_auc": 0.6614774114774115,
+   "roc_auc": 0.9290780141843972
+  }
+ },
+ "OCEANFX|XGBoost|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.942,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.7596078431372548,
+   "f1_macro": 0.8854567101263902,
+   "n_pos": 14.0,
+   "n_pred_pos": 15.8,
+   "pr_auc": 0.8856336565419933,
+   "roc_auc": 0.9767441860465116
+  },
+  "ensemble": {
+   "acc": 0.94,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.75,
+   "f1_macro": 0.8823529411764706,
+   "n_pos": 14,
+   "n_pred_pos": 16,
+   "pr_auc": 0.8863997930174399,
+   "roc_auc": 0.9792358803986712
+  }
+ },
+ "OCEANFX|XGBoost|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.7,
+   "recall_pos": 0.8133333333333332,
+   "precision_pos": 0.31021753460777857,
+   "f1_macro": 0.6213349338349339,
+   "n_pos": 15.0,
+   "n_pred_pos": 39.4,
+   "pr_auc": 0.4313015649170625,
+   "roc_auc": 0.827607843137255
+  },
+  "ensemble": {
+   "acc": 0.7,
+   "recall_pos": 0.8666666666666667,
+   "precision_pos": 0.3170731707317073,
+   "f1_macro": 0.6279761904761905,
+   "n_pos": 15,
+   "n_pred_pos": 41,
+   "pr_auc": 0.43604235707036,
+   "roc_auc": 0.8298039215686275
+  }
+ },
+ "OCEANFX|XGBoost|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.818,
+   "recall_pos": 0.7333333333333333,
+   "precision_pos": 0.29554545454545456,
+   "f1_macro": 0.656335040439246,
+   "n_pos": 9.0,
+   "n_pred_pos": 22.4,
+   "pr_auc": 0.42988195388254813,
+   "roc_auc": 0.8713064713064714
+  },
+  "ensemble": {
+   "acc": 0.83,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.3181818181818182,
+   "f1_macro": 0.6755105936247375,
+   "n_pos": 9,
+   "n_pred_pos": 22,
+   "pr_auc": 0.4462900933489169,
+   "roc_auc": 0.8766788766788767
+  }
+ },
+ "OCEANFX|XGBoost|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.874,
+   "recall_pos": 0.8,
+   "precision_pos": 0.21333333333333332,
+   "f1_macro": 0.6336144227973248,
+   "n_pos": 4.0,
+   "n_pred_pos": 15.0,
+   "pr_auc": 0.6992086391869,
+   "roc_auc": 0.9458333333333334
+  },
+  "ensemble": {
+   "acc": 0.87,
+   "recall_pos": 0.75,
+   "precision_pos": 0.2,
+   "f1_macro": 0.6219831346321605,
+   "n_pos": 4,
+   "n_pred_pos": 15,
+   "pr_auc": 0.7026315789473684,
+   "roc_auc": 0.9557291666666666
+  }
+ },
+ "OCEANFX|XGBoost|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.982,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5466666666666666,
+   "f1_macro": 0.8458342896353687,
+   "n_pos": 2.0,
+   "n_pred_pos": 3.8,
+   "pr_auc": 0.7666666666666666,
+   "roc_auc": 0.9938775510204081
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5,
+   "f1_macro": 0.8281786941580755,
+   "n_pos": 2,
+   "n_pred_pos": 4,
+   "pr_auc": 0.8333333333333333,
+   "roc_auc": 0.9948979591836734
+  }
+ },
+ "OCEANFX|XGBoost|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.826,
+   "recall_pos": 0.8782608695652174,
+   "precision_pos": 0.580859010270775,
+   "f1_macro": 0.7883823814164139,
+   "n_pos": 23.0,
+   "n_pred_pos": 34.8,
+   "pr_auc": 0.8397032406624423,
+   "roc_auc": 0.9188029361942405
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 0.8695652173913043,
+   "precision_pos": 0.6060606060606061,
+   "f1_macro": 0.8015873015873016,
+   "n_pos": 23,
+   "n_pred_pos": 33,
+   "pr_auc": 0.8551974594922376,
+   "roc_auc": 0.9243365330321851
+  }
+ },
+ "OCEANFX|XGBoost|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.6839999999999999,
+   "recall_pos": 0.8476190476190476,
+   "precision_pos": 0.3857534844069073,
+   "f1_macro": 0.6457961602807468,
+   "n_pos": 21.0,
+   "n_pred_pos": 46.2,
+   "pr_auc": 0.7358884290133171,
+   "roc_auc": 0.8714888487040386
+  },
+  "ensemble": {
+   "acc": 0.68,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.3829787234042553,
+   "f1_macro": 0.64349376114082,
+   "n_pos": 21,
+   "n_pred_pos": 47,
+   "pr_auc": 0.7437383359288594,
+   "roc_auc": 0.8770343580470162
+  }
+ },
+ "OCEANFX|XGBoost|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.9739999999999999,
+   "recall_pos": 0.39999999999999997,
+   "precision_pos": 0.6333333333333333,
+   "f1_macro": 0.7299999460529654,
+   "n_pos": 3.0,
+   "n_pred_pos": 2.0,
+   "pr_auc": 0.5346252168883747,
+   "roc_auc": 0.9367697594501718
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 0.3333333333333333,
+   "precision_pos": 0.5,
+   "f1_macro": 0.6923076923076923,
+   "n_pos": 3,
+   "n_pred_pos": 2,
+   "pr_auc": 0.5254901960784314,
+   "roc_auc": 0.9415807560137458
+  }
+ },
+ "OCEANFX|XGBoost|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.942,
+   "recall_pos": 0.9,
+   "precision_pos": 0.5143278943278944,
+   "f1_macro": 0.8103180655769362,
+   "n_pos": 6.0,
+   "n_pred_pos": 10.6,
+   "pr_auc": 0.9131623931623931,
+   "roc_auc": 0.9890070921985815
+  },
+  "ensemble": {
+   "acc": 0.93,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.45454545454545453,
+   "f1_macro": 0.7749919639987142,
+   "n_pos": 6,
+   "n_pred_pos": 11,
+   "pr_auc": 0.9047619047619047,
+   "roc_auc": 0.9858156028368794
+  }
+ },
+ "OCEANFX|XGBoost|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.958,
+   "recall_pos": 0.7,
+   "precision_pos": 0.27666666666666667,
+   "f1_macro": 0.6867381073202743,
+   "n_pos": 2.0,
+   "n_pred_pos": 5.0,
+   "pr_auc": 0.6525,
+   "roc_auc": 0.9704081632653061
+  },
+  "ensemble": {
+   "acc": 0.96,
+   "recall_pos": 0.5,
+   "precision_pos": 0.25,
+   "f1_macro": 0.6563573883161512,
+   "n_pos": 2,
+   "n_pred_pos": 4,
+   "pr_auc": 0.6666666666666666,
+   "roc_auc": 0.9795918367346939
+  }
+ },
+ "OCEANFX|XGBoost|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.984,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5666666666666667,
+   "f1_macro": 0.8558815754692043,
+   "n_pos": 2.0,
+   "n_pred_pos": 3.6,
+   "pr_auc": 0.6666666666666666,
+   "roc_auc": 0.9908163265306122
+  },
+  "ensemble": {
+   "acc": 0.99,
+   "recall_pos": 1.0,
+   "precision_pos": 0.6666666666666666,
+   "f1_macro": 0.8974358974358975,
+   "n_pos": 2,
+   "n_pred_pos": 3,
+   "pr_auc": 0.5833333333333333,
+   "roc_auc": 0.9897959183673469
+  }
+ },
+ "OCEANFX|XGBoost|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.858,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2974436090225564,
+   "f1_macro": 0.6883350152825936,
+   "n_pos": 6.0,
+   "n_pred_pos": 20.2,
+   "pr_auc": 0.5612681545034486,
+   "roc_auc": 0.9574468085106382
+  },
+  "ensemble": {
+   "acc": 0.87,
+   "recall_pos": 1.0,
+   "precision_pos": 0.3157894736842105,
+   "f1_macro": 0.7028571428571428,
+   "n_pos": 6,
+   "n_pred_pos": 19,
+   "pr_auc": 0.6193833943833943,
+   "roc_auc": 0.9645390070921985
+  }
+ },
+ "OCEANFX|XGBoost|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.9339999999999999,
+   "recall_pos": 0.5,
+   "precision_pos": 0.15547619047619046,
+   "f1_macro": 0.6007598301930168,
+   "n_pos": 2.0,
+   "n_pred_pos": 6.6,
+   "pr_auc": 0.5853715728715729,
+   "roc_auc": 0.9479591836734695
+  },
+  "ensemble": {
+   "acc": 0.93,
+   "recall_pos": 0.5,
+   "precision_pos": 0.14285714285714285,
+   "f1_macro": 0.5927865037812682,
+   "n_pos": 2,
+   "n_pred_pos": 7,
+   "pr_auc": 0.5666666666666667,
+   "roc_auc": 0.9336734693877551
+  }
+ },
+ "OCEANFX|XGBoost|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.758,
+   "recall_pos": 0.8347826086956521,
+   "precision_pos": 0.4850811800811801,
+   "f1_macro": 0.7185845595751308,
+   "n_pos": 23.0,
+   "n_pred_pos": 39.6,
+   "pr_auc": 0.7682691748108085,
+   "roc_auc": 0.8922642574816487
+  },
+  "ensemble": {
+   "acc": 0.77,
+   "recall_pos": 0.8260869565217391,
+   "precision_pos": 0.5,
+   "f1_macro": 0.7287415968864253,
+   "n_pos": 23,
+   "n_pred_pos": 38,
+   "pr_auc": 0.7668022746723056,
+   "roc_auc": 0.8955392433653303
+  }
+ },
+ "OCEANFX|LightGBM|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.7780000000000001,
+   "recall_pos": 0.9142857142857143,
+   "precision_pos": 0.2286661614247821,
+   "f1_macro": 0.6155812754177001,
+   "n_pos": 7.0,
+   "n_pred_pos": 28.0,
+   "pr_auc": 0.6167341437276285,
+   "roc_auc": 0.9336405529953916
+  },
+  "ensemble": {
+   "acc": 0.75,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.2,
+   "f1_macro": 0.585475045597745,
+   "n_pos": 7,
+   "n_pred_pos": 30,
+   "pr_auc": 0.653327922077922,
+   "roc_auc": 0.9339477726574501
+  }
+ },
+ "OCEANFX|LightGBM|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.7620000000000001,
+   "recall_pos": 0.8400000000000001,
+   "precision_pos": 0.44989844674055207,
+   "f1_macro": 0.7093790879534028,
+   "n_pos": 20.0,
+   "n_pred_pos": 37.4,
+   "pr_auc": 0.6111473692875988,
+   "roc_auc": 0.8491249999999999
+  },
+  "ensemble": {
+   "acc": 0.75,
+   "recall_pos": 0.85,
+   "precision_pos": 0.4358974358974359,
+   "f1_macro": 0.6994831109508355,
+   "n_pos": 20,
+   "n_pred_pos": 39,
+   "pr_auc": 0.6300442965367239,
+   "roc_auc": 0.856875
+  }
+ },
+ "OCEANFX|LightGBM|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.85,
+   "recall_pos": 0.85,
+   "precision_pos": 0.3298268398268398,
+   "f1_macro": 0.6937950762403753,
+   "n_pos": 8.0,
+   "n_pred_pos": 20.6,
+   "pr_auc": 0.5888941503494397,
+   "roc_auc": 0.9070652173913043
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 0.875,
+   "precision_pos": 0.3181818181818182,
+   "f1_macro": 0.6862745098039216,
+   "n_pos": 8,
+   "n_pred_pos": 22,
+   "pr_auc": 0.6000742964129692,
+   "roc_auc": 0.9171195652173912
+  }
+ },
+ "OCEANFX|LightGBM|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 0.9420000000000002,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.7587745098039216,
+   "f1_macro": 0.8852337050138793,
+   "n_pos": 14.0,
+   "n_pred_pos": 15.8,
+   "pr_auc": 0.8648451973828675,
+   "roc_auc": 0.970764119601329
+  },
+  "ensemble": {
+   "acc": 0.96,
+   "recall_pos": 0.9285714285714286,
+   "precision_pos": 0.8125,
+   "f1_macro": 0.9215686274509804,
+   "n_pos": 14,
+   "n_pred_pos": 16,
+   "pr_auc": 0.8719634327085065,
+   "roc_auc": 0.9742524916943522
+  }
+ },
+ "OCEANFX|LightGBM|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.9019999999999999,
+   "recall_pos": 0.6333333333333333,
+   "precision_pos": 0.34378954378954385,
+   "f1_macro": 0.69286250876322,
+   "n_pos": 6.0,
+   "n_pred_pos": 11.4,
+   "pr_auc": 0.6611311347551756,
+   "roc_auc": 0.9280141843971631
+  },
+  "ensemble": {
+   "acc": 0.89,
+   "recall_pos": 0.6666666666666666,
+   "precision_pos": 0.3076923076923077,
+   "f1_macro": 0.680139575457982,
+   "n_pos": 6,
+   "n_pred_pos": 13,
+   "pr_auc": 0.6467948717948717,
+   "roc_auc": 0.9273049645390071
+  }
+ },
+ "OCEANFX|LightGBM|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.946,
+   "recall_pos": 0.8428571428571427,
+   "precision_pos": 0.7871428571428571,
+   "f1_macro": 0.8910575769581035,
+   "n_pos": 14.0,
+   "n_pred_pos": 15.0,
+   "pr_auc": 0.8806377086864792,
+   "roc_auc": 0.9752491694352159
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.8,
+   "f1_macro": 0.8991732204073402,
+   "n_pos": 14,
+   "n_pred_pos": 15,
+   "pr_auc": 0.8852091155970465,
+   "roc_auc": 0.9759136212624585
+  }
+ },
+ "OCEANFX|LightGBM|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.6960000000000001,
+   "recall_pos": 0.8400000000000001,
+   "precision_pos": 0.31088747243313325,
+   "f1_macro": 0.6214236076231552,
+   "n_pos": 15.0,
+   "n_pred_pos": 40.6,
+   "pr_auc": 0.4525489728654959,
+   "roc_auc": 0.8404705882352941
+  },
+  "ensemble": {
+   "acc": 0.69,
+   "recall_pos": 0.8666666666666667,
+   "precision_pos": 0.30952380952380953,
+   "f1_macro": 0.6196785670469881,
+   "n_pos": 15,
+   "n_pred_pos": 42,
+   "pr_auc": 0.4487374075914975,
+   "roc_auc": 0.8423529411764705
+  }
+ },
+ "OCEANFX|LightGBM|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.8240000000000001,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.3105151515151515,
+   "f1_macro": 0.6693355717891067,
+   "n_pos": 9.0,
+   "n_pred_pos": 22.6,
+   "pr_auc": 0.4312767130448526,
+   "roc_auc": 0.8781440781440782
+  },
+  "ensemble": {
+   "acc": 0.81,
+   "recall_pos": 0.7777777777777778,
+   "precision_pos": 0.2916666666666667,
+   "f1_macro": 0.6552349845763019,
+   "n_pos": 9,
+   "n_pred_pos": 24,
+   "pr_auc": 0.4709868591447539,
+   "roc_auc": 0.884004884004884
+  }
+ },
+ "OCEANFX|LightGBM|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.8699999999999999,
+   "recall_pos": 0.8,
+   "precision_pos": 0.20815126050420169,
+   "f1_macro": 0.6290580542293964,
+   "n_pos": 4.0,
+   "n_pred_pos": 15.4,
+   "pr_auc": 0.69992290610278,
+   "roc_auc": 0.9447916666666666
+  },
+  "ensemble": {
+   "acc": 0.87,
+   "recall_pos": 0.75,
+   "precision_pos": 0.2,
+   "f1_macro": 0.6219831346321605,
+   "n_pos": 4,
+   "n_pred_pos": 15,
+   "pr_auc": 0.7,
+   "roc_auc": 0.953125
+  }
+ },
+ "OCEANFX|LightGBM|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.984,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5666666666666667,
+   "f1_macro": 0.8558815754692043,
+   "n_pos": 2.0,
+   "n_pred_pos": 3.6,
+   "pr_auc": 0.7999999999999998,
+   "roc_auc": 0.9948979591836734
+  },
+  "ensemble": {
+   "acc": 0.99,
+   "recall_pos": 1.0,
+   "precision_pos": 0.6666666666666666,
+   "f1_macro": 0.8974358974358975,
+   "n_pos": 2,
+   "n_pred_pos": 3,
+   "pr_auc": 0.8333333333333333,
+   "roc_auc": 0.9948979591836734
+  }
+ },
+ "OCEANFX|LightGBM|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.818,
+   "recall_pos": 0.8608695652173912,
+   "precision_pos": 0.570260333863275,
+   "f1_macro": 0.778703329338538,
+   "n_pos": 23.0,
+   "n_pred_pos": 34.8,
+   "pr_auc": 0.8296260724269562,
+   "roc_auc": 0.9172219085262563
+  },
+  "ensemble": {
+   "acc": 0.82,
+   "recall_pos": 0.8695652173913043,
+   "precision_pos": 0.5714285714285714,
+   "f1_macro": 0.7814473045167557,
+   "n_pos": 23,
+   "n_pred_pos": 35,
+   "pr_auc": 0.8458002648677705,
+   "roc_auc": 0.9203839638622247
+  }
+ },
+ "OCEANFX|LightGBM|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.696,
+   "recall_pos": 0.8476190476190476,
+   "precision_pos": 0.39637244538407335,
+   "f1_macro": 0.6564374933638725,
+   "n_pos": 21.0,
+   "n_pred_pos": 45.0,
+   "pr_auc": 0.7353809819955149,
+   "roc_auc": 0.8734177215189873
+  },
+  "ensemble": {
+   "acc": 0.7,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.4,
+   "f1_macro": 0.66078697421981,
+   "n_pos": 21,
+   "n_pred_pos": 45,
+   "pr_auc": 0.7369878963009138,
+   "roc_auc": 0.8776371308016877
+  }
+ },
+ "OCEANFX|LightGBM|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.978,
+   "recall_pos": 0.6,
+   "precision_pos": 0.7133333333333333,
+   "f1_macro": 0.8109883029341791,
+   "n_pos": 3.0,
+   "n_pred_pos": 2.8,
+   "pr_auc": 0.6394102564102564,
+   "roc_auc": 0.9353951890034364
+  },
+  "ensemble": {
+   "acc": 0.99,
+   "recall_pos": 0.6666666666666666,
+   "precision_pos": 1.0,
+   "f1_macro": 0.8974358974358975,
+   "n_pos": 3,
+   "n_pred_pos": 2,
+   "pr_auc": 0.7142857142857142,
+   "roc_auc": 0.9381443298969072
+  }
+ },
+ "OCEANFX|LightGBM|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.9479999999999998,
+   "recall_pos": 0.9666666666666666,
+   "precision_pos": 0.54,
+   "f1_macro": 0.8318765249397089,
+   "n_pos": 6.0,
+   "n_pred_pos": 10.8,
+   "pr_auc": 0.9435714285714287,
+   "roc_auc": 0.9939716312056739
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5454545454545454,
+   "f1_macro": 0.8392799742847958,
+   "n_pos": 6,
+   "n_pred_pos": 11,
+   "pr_auc": 0.9242424242424242,
+   "roc_auc": 0.9911347517730497
+  }
+ },
+ "OCEANFX|LightGBM|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.968,
+   "recall_pos": 0.8,
+   "precision_pos": 0.36,
+   "f1_macro": 0.7393556001536344,
+   "n_pos": 2.0,
+   "n_pred_pos": 4.4,
+   "pr_auc": 0.6883333333333332,
+   "roc_auc": 0.9846938775510203
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4,
+   "f1_macro": 0.7779422649888971,
+   "n_pos": 2,
+   "n_pred_pos": 5,
+   "pr_auc": 0.75,
+   "roc_auc": 0.9897959183673469
+  }
+ },
+ "OCEANFX|LightGBM|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.986,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5999999999999999,
+   "f1_macro": 0.8697330161247686,
+   "n_pos": 2.0,
+   "n_pred_pos": 3.4,
+   "pr_auc": 0.6833333333333333,
+   "roc_auc": 0.9908163265306122
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5,
+   "f1_macro": 0.8281786941580755,
+   "n_pos": 2,
+   "n_pred_pos": 4,
+   "pr_auc": 0.8333333333333333,
+   "roc_auc": 0.9948979591836734
+  }
+ },
+ "OCEANFX|LightGBM|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.8560000000000001,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2945864661654135,
+   "f1_macro": 0.6860010703534722,
+   "n_pos": 6.0,
+   "n_pred_pos": 20.4,
+   "pr_auc": 0.6595258445258445,
+   "roc_auc": 0.9684397163120566
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2727272727272727,
+   "f1_macro": 0.6677740863787375,
+   "n_pos": 6,
+   "n_pred_pos": 22,
+   "pr_auc": 0.7435897435897436,
+   "roc_auc": 0.9716312056737588
+  }
+ },
+ "OCEANFX|LightGBM|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.9480000000000001,
+   "recall_pos": 0.5,
+   "precision_pos": 0.205,
+   "f1_macro": 0.6302939390032691,
+   "n_pos": 2.0,
+   "n_pred_pos": 5.2,
+   "pr_auc": 0.5835369220151829,
+   "roc_auc": 0.939795918367347
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.5,
+   "precision_pos": 0.2,
+   "f1_macro": 0.6299037749814952,
+   "n_pos": 2,
+   "n_pred_pos": 5,
+   "pr_auc": 0.5833333333333334,
+   "roc_auc": 0.9489795918367347
+  }
+ },
+ "OCEANFX|LightGBM|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.742,
+   "recall_pos": 0.8173913043478261,
+   "precision_pos": 0.4656797853309481,
+   "f1_macro": 0.702112027011521,
+   "n_pos": 23.0,
+   "n_pred_pos": 40.4,
+   "pr_auc": 0.772580682489864,
+   "roc_auc": 0.8914737436476567
+  },
+  "ensemble": {
+   "acc": 0.7,
+   "recall_pos": 0.8260869565217391,
+   "precision_pos": 0.4222222222222222,
+   "f1_macro": 0.6657754010695187,
+   "n_pos": 23,
+   "n_pred_pos": 45,
+   "pr_auc": 0.776884715375581,
+   "roc_auc": 0.8955392433653303
+  }
+ },
+ "OCEANFX|SMART-NIR|Thiamethoxam": {
+  "per_fold_mean": {
+   "acc": 0.8939999999999999,
+   "recall_pos": 0.9142857142857143,
+   "precision_pos": 0.3930672268907563,
+   "f1_macro": 0.7439905411135845,
+   "n_pos": 7.0,
+   "n_pred_pos": 16.4,
+   "pr_auc": 0.8276195853835604,
+   "roc_auc": 0.9678955453149001
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 0.8571428571428571,
+   "precision_pos": 0.2857142857142857,
+   "f1_macro": 0.6677740863787375,
+   "n_pos": 7,
+   "n_pred_pos": 21,
+   "pr_auc": 0.8956043956043955,
+   "roc_auc": 0.9708141321044547
+  }
+ },
+ "OCEANFX|SMART-NIR|Permethrin": {
+  "per_fold_mean": {
+   "acc": 0.932,
+   "recall_pos": 0.7500000000000001,
+   "precision_pos": 0.8970846233230134,
+   "f1_macro": 0.8865078088293987,
+   "n_pos": 20.0,
+   "n_pred_pos": 16.8,
+   "pr_auc": 0.8951512713554791,
+   "roc_auc": 0.9444374999999999
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.8,
+   "precision_pos": 0.9411764705882353,
+   "f1_macro": 0.917095009119549,
+   "n_pos": 20,
+   "n_pred_pos": 17,
+   "pr_auc": 0.9170630373107995,
+   "roc_auc": 0.944375
+  }
+ },
+ "OCEANFX|SMART-NIR|Metalaxyl": {
+  "per_fold_mean": {
+   "acc": 0.9019999999999999,
+   "recall_pos": 0.9,
+   "precision_pos": 0.46061438561438556,
+   "f1_macro": 0.7746704706157604,
+   "n_pos": 8.0,
+   "n_pred_pos": 16.2,
+   "pr_auc": 0.8372790602254888,
+   "roc_auc": 0.9603260869565219
+  },
+  "ensemble": {
+   "acc": 0.9,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4444444444444444,
+   "f1_macro": 0.7789566755083996,
+   "n_pos": 8,
+   "n_pred_pos": 18,
+   "pr_auc": 0.975,
+   "roc_auc": 0.9972826086956522
+  }
+ },
+ "OCEANFX|SMART-NIR|Azoxystrobin": {
+  "per_fold_mean": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 14.0,
+   "n_pred_pos": 14.0,
+   "pr_auc": 0.9999999999999998,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 14,
+   "n_pred_pos": 14,
+   "pr_auc": 0.9999999999999999,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Imidaclopird": {
+  "per_fold_mean": {
+   "acc": 0.982,
+   "recall_pos": 0.8333333333333334,
+   "precision_pos": 0.8595238095238095,
+   "f1_macro": 0.914090096667002,
+   "n_pos": 6.0,
+   "n_pred_pos": 5.8,
+   "pr_auc": 0.8761596181596181,
+   "roc_auc": 0.9719858156028369
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 6,
+   "n_pred_pos": 6,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Difenoconazole": {
+  "per_fold_mean": {
+   "acc": 0.994,
+   "recall_pos": 0.9571428571428571,
+   "precision_pos": 1.0,
+   "f1_macro": 0.9871547848426461,
+   "n_pos": 14.0,
+   "n_pred_pos": 13.4,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 14,
+   "n_pred_pos": 14,
+   "pr_auc": 0.9999999999999999,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Cypermethrin": {
+  "per_fold_mean": {
+   "acc": 0.9040000000000001,
+   "recall_pos": 0.8933333333333333,
+   "precision_pos": 0.6276190476190477,
+   "f1_macro": 0.8389427939799095,
+   "n_pos": 15.0,
+   "n_pred_pos": 21.4,
+   "pr_auc": 0.7549106907933559,
+   "roc_auc": 0.9564705882352941
+  },
+  "ensemble": {
+   "acc": 0.91,
+   "recall_pos": 1.0,
+   "precision_pos": 0.625,
+   "f1_macro": 0.8566650740563784,
+   "n_pos": 15,
+   "n_pred_pos": 24,
+   "pr_auc": 0.8585301191183544,
+   "roc_auc": 0.9858823529411764
+  }
+ },
+ "OCEANFX|SMART-NIR|Cyhalothrin": {
+  "per_fold_mean": {
+   "acc": 0.9639999999999999,
+   "recall_pos": 0.9333333333333333,
+   "precision_pos": 0.7409867909867909,
+   "f1_macro": 0.9014753434375553,
+   "n_pos": 9.0,
+   "n_pred_pos": 11.4,
+   "pr_auc": 0.9423356890023558,
+   "roc_auc": 0.9916971916971917
+  },
+  "ensemble": {
+   "acc": 0.98,
+   "recall_pos": 1.0,
+   "precision_pos": 0.8181818181818182,
+   "f1_macro": 0.9444444444444444,
+   "n_pos": 9,
+   "n_pred_pos": 11,
+   "pr_auc": 1.0000000000000002,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Chlorantraniliprol": {
+  "per_fold_mean": {
+   "acc": 0.8800000000000001,
+   "recall_pos": 0.95,
+   "precision_pos": 0.24575396825396822,
+   "f1_macro": 0.6617264591796646,
+   "n_pos": 4.0,
+   "n_pred_pos": 15.6,
+   "pr_auc": 0.8478623188405796,
+   "roc_auc": 0.98515625
+  },
+  "ensemble": {
+   "acc": 0.84,
+   "recall_pos": 1.0,
+   "precision_pos": 0.2,
+   "f1_macro": 0.6212121212121212,
+   "n_pos": 4,
+   "n_pred_pos": 20,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Chlopyrifos Methyl": {
+  "per_fold_mean": {
+   "acc": 0.998,
+   "recall_pos": 1.0,
+   "precision_pos": 0.9333333333333332,
+   "f1_macro": 0.9794871794871796,
+   "n_pos": 2.0,
+   "n_pred_pos": 2.2,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 2,
+   "n_pred_pos": 2,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Emamectin benzoate": {
+  "per_fold_mean": {
+   "acc": 0.9279999999999999,
+   "recall_pos": 0.8347826086956521,
+   "precision_pos": 0.853919413919414,
+   "f1_macro": 0.8976184902773809,
+   "n_pos": 23.0,
+   "n_pred_pos": 22.6,
+   "pr_auc": 0.9091541497717384,
+   "roc_auc": 0.9623941276115188
+  },
+  "ensemble": {
+   "acc": 0.94,
+   "recall_pos": 0.8260869565217391,
+   "precision_pos": 0.9047619047619048,
+   "f1_macro": 0.9125874125874126,
+   "n_pos": 23,
+   "n_pred_pos": 21,
+   "pr_auc": 0.9561825512397594,
+   "roc_auc": 0.9830604178430267
+  }
+ },
+ "OCEANFX|SMART-NIR|Chlorothalonil": {
+  "per_fold_mean": {
+   "acc": 0.8959999999999999,
+   "recall_pos": 0.8,
+   "precision_pos": 0.7326231884057971,
+   "f1_macro": 0.8485119834604683,
+   "n_pos": 21.0,
+   "n_pred_pos": 23.0,
+   "pr_auc": 0.8603520295600002,
+   "roc_auc": 0.9393007836045811
+  },
+  "ensemble": {
+   "acc": 0.93,
+   "recall_pos": 0.9047619047619048,
+   "precision_pos": 0.7916666666666666,
+   "f1_macro": 0.8996415770609318,
+   "n_pos": 21,
+   "n_pred_pos": 24,
+   "pr_auc": 0.910833855686797,
+   "roc_auc": 0.9722724532851116
+  }
+ },
+ "OCEANFX|SMART-NIR|Triadimefon": {
+  "per_fold_mean": {
+   "acc": 0.9719999999999999,
+   "recall_pos": 0.5999999999999999,
+   "precision_pos": 0.5333333333333333,
+   "f1_macro": 0.7737198613220192,
+   "n_pos": 3.0,
+   "n_pred_pos": 3.4,
+   "pr_auc": 0.6502737520128824,
+   "roc_auc": 0.9512027491408934
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 1.0,
+   "precision_pos": 0.5,
+   "f1_macro": 0.8254799301919721,
+   "n_pos": 3,
+   "n_pred_pos": 6,
+   "pr_auc": 0.7555555555555555,
+   "roc_auc": 0.9896907216494845
+  }
+ },
+ "OCEANFX|SMART-NIR|Cyantraniliprole": {
+  "per_fold_mean": {
+   "acc": 0.992,
+   "recall_pos": 1.0,
+   "precision_pos": 0.9047619047619048,
+   "f1_macro": 0.970151311327782,
+   "n_pos": 6.0,
+   "n_pred_pos": 6.8,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 6,
+   "n_pred_pos": 6,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Flutolanil": {
+  "per_fold_mean": {
+   "acc": 0.9759999999999998,
+   "recall_pos": 1.0,
+   "precision_pos": 0.45999999999999996,
+   "f1_macro": 0.8080841224904042,
+   "n_pos": 2.0,
+   "n_pred_pos": 4.4,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4,
+   "f1_macro": 0.7779422649888971,
+   "n_pos": 2,
+   "n_pred_pos": 5,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Indoxacarb": {
+  "per_fold_mean": {
+   "acc": 0.986,
+   "recall_pos": 0.8,
+   "precision_pos": 0.5999999999999999,
+   "f1_macro": 0.8364207221350078,
+   "n_pos": 2.0,
+   "n_pred_pos": 2.6,
+   "pr_auc": 0.8316666666666667,
+   "roc_auc": 0.9928571428571429
+  },
+  "ensemble": {
+   "acc": 0.97,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4,
+   "f1_macro": 0.7779422649888971,
+   "n_pos": 2,
+   "n_pred_pos": 5,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Abamectin": {
+  "per_fold_mean": {
+   "acc": 0.9039999999999999,
+   "recall_pos": 0.9333333333333332,
+   "precision_pos": 0.38931499872676345,
+   "f1_macro": 0.7461626662312336,
+   "n_pos": 6.0,
+   "n_pred_pos": 14.8,
+   "pr_auc": 0.8663575850672623,
+   "roc_auc": 0.973758865248227
+  },
+  "ensemble": {
+   "acc": 0.91,
+   "recall_pos": 1.0,
+   "precision_pos": 0.4,
+   "f1_macro": 0.7605746209098164,
+   "n_pos": 6,
+   "n_pred_pos": 15,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Propamocarb.HCL": {
+  "per_fold_mean": {
+   "acc": 0.9960000000000001,
+   "recall_pos": 0.9,
+   "precision_pos": 0.9333333333333332,
+   "f1_macro": 0.9456462319406482,
+   "n_pos": 2.0,
+   "n_pred_pos": 2.0,
+   "pr_auc": 0.9666666666666666,
+   "roc_auc": 0.9989795918367348
+  },
+  "ensemble": {
+   "acc": 1.0,
+   "recall_pos": 1.0,
+   "precision_pos": 1.0,
+   "f1_macro": 1.0,
+   "n_pos": 2,
+   "n_pred_pos": 2,
+   "pr_auc": 1.0,
+   "roc_auc": 1.0
+  }
+ },
+ "OCEANFX|SMART-NIR|Chlothianidin": {
+  "per_fold_mean": {
+   "acc": 0.93,
+   "recall_pos": 0.8869565217391304,
+   "precision_pos": 0.8271575091575091,
+   "f1_macro": 0.9039925305214369,
+   "n_pos": 23.0,
+   "n_pred_pos": 24.8,
+   "pr_auc": 0.9433608161898347,
+   "roc_auc": 0.9696216826651609
+  },
+  "ensemble": {
+   "acc": 0.95,
+   "recall_pos": 0.9130434782608695,
+   "precision_pos": 0.875,
+   "f1_macro": 0.930468641357252,
+   "n_pos": 23,
+   "n_pred_pos": 24,
+   "pr_auc": 0.9688002252342838,
+   "roc_auc": 0.9836250705815923
+  }
+ }
+}

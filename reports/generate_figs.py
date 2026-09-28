@@ -1,18 +1,23 @@
 """
-Regenerates the EDA figures used in reports/main.tex (Hinh 4/5/6: spectra,
-crosstab heatmap, concentration boxplot) for both machines.
+Regenerates the EDA figures used in reports/main.tex (spectra, detection-rate
+crosstab heatmap, MRL-based safety heatmap, concentration boxplot) for both
+machines.
 
 Run from anywhere, e.g.:
     python3 reports/generate_figs.py
 
-Reads from ../all-dataset/Danang-NIR/{FLAMENIR,OCEANFX}/ALL.csv and writes
-PNGs into reports/figs/. Adjust SUBSTANCES/CAT_ORDER or the plotting blocks
-below and re-run to refresh the figures after any data or styling change.
+Reads from ../all-dataset/Danang-NIR/{FLAMENIR,OCEANFX}/ALL.csv (plus
+food_ids.json/pesticide_ids.json/thresholds.json for the MRL lookup used by
+the safety heatmap) and writes PNGs into reports/figs/. Adjust
+SUBSTANCES/CAT_ORDER or the plotting blocks below and re-run to refresh the
+figures after any data or styling change.
 """
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import json
 
 import pandas as pd
 import numpy as np
@@ -20,6 +25,17 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from dataset.preprocessing import remove_spectral_outliers
+
+DATASET_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "..", "all-dataset", "Danang-NIR")
+with open(os.path.join(DATASET_ROOT, "food_ids.json")) as f:
+    FOOD_IDS = json.load(f)
+with open(os.path.join(DATASET_ROOT, "pesticide_ids.json")) as f:
+    PESTICIDE_IDS = json.load(f)
+with open(os.path.join(DATASET_ROOT, "thresholds.json")) as f:
+    THRESHOLDS = json.load(f)
+FOOD_NAME_TO_ID = {v["name"]: k for k, v in FOOD_IDS.items()}
+PESTICIDE_NAME_TO_ID = {v["name"]: k for k, v in PESTICIDE_IDS.items()}
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIGDIR = os.path.join(REPO_ROOT, "reports", "figs")
@@ -47,6 +63,7 @@ CAT_ORDER = ['Khổ Qua', 'Mồng Tơi', 'Cải Thìa', 'Cà Chua', 'Cải Bẹ 
 
 data = {}
 crosstabs = {}
+safety_crosstabs = {}
 
 for machine in ['FLAMENIR', 'OCEANFX']:
     print(f"=== {machine} ===")
@@ -66,6 +83,19 @@ for machine in ['FLAMENIR', 'OCEANFX']:
         for s in SUBSTANCES:
             crosstab_pct.loc[s, cat] = 100.0 * (sub_df[s] > 0).mean() if len(sub_df) else np.nan
     crosstabs[machine] = crosstab_pct
+
+    # % Vuot nguong among DETECTED samples only, per (substance, category) --
+    # MRL is looked up per row's own food category, not a single global value.
+    safety_pct = pd.DataFrame(index=SUBSTANCES, columns=CAT_ORDER, dtype=float)
+    for cat in CAT_ORDER:
+        sub_df = df[df['category'] == cat]
+        fid = FOOD_NAME_TO_ID[cat]
+        for s in SUBSTANCES:
+            pid = PESTICIDE_NAME_TO_ID[s]
+            mrl = THRESHOLDS[fid][pid]["mrl"]
+            detected = sub_df.loc[sub_df[s] != -1, s]
+            safety_pct.loc[s, cat] = 100.0 * (detected > mrl).mean() if len(detected) else np.nan
+    safety_crosstabs[machine] = safety_pct
 
 vmax_shared = max(crosstabs['FLAMENIR'].values.max(), crosstabs['OCEANFX'].values.max())
 
@@ -109,6 +139,32 @@ for machine in ['FLAMENIR', 'OCEANFX']:
     cbar.ax.tick_params(labelsize=11)
     plt.tight_layout()
     plt.savefig(f"{FIGDIR}/crosstab_{machine}.png", dpi=220)
+    plt.close()
+
+# ---------------- Figure: substance x category heatmap of %Vuot nguong (MRL-based, among detected samples only) ----------------
+for machine in ['FLAMENIR', 'OCEANFX']:
+    st = safety_crosstabs[machine]
+    cmap = matplotlib.colormaps['RdYlGn_r'].copy()
+    cmap.set_bad('lightgray')
+    fig, ax = plt.subplots(figsize=(7.2, 11))
+    im = ax.imshow(st.values.astype(float), aspect='auto', cmap=cmap, vmin=0, vmax=100)
+    ax.set_xticks(range(len(CAT_ORDER)))
+    ax.set_xticklabels(CAT_ORDER, rotation=45, ha='right', fontsize=13)
+    ax.set_yticks(range(len(SUBSTANCES)))
+    ax.set_yticklabels(SUBSTANCES, fontsize=13)
+    for i in range(len(SUBSTANCES)):
+        for j in range(len(CAT_ORDER)):
+            val = st.values[i, j]
+            if np.isnan(val):
+                ax.text(j, i, "--", ha='center', va='center', fontsize=9, color='black')
+                continue
+            color = 'white' if val > 55 else 'black'
+            ax.text(j, i, f"{val:.0f}", ha='center', va='center', fontsize=10.5, color=color)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+    cbar.set_label('% Vượt ngưỡng (trong số mẫu phát hiện)', fontsize=12)
+    cbar.ax.tick_params(labelsize=11)
+    plt.tight_layout()
+    plt.savefig(f"{FIGDIR}/safety_{machine}.png", dpi=220)
     plt.close()
 
 # ---------------- Figure: concentration boxplot (0-1 normalized) per substance ----------------
