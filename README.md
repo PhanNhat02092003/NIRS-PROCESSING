@@ -141,15 +141,17 @@ Every classification result is a `{"code": ..., "conf-score": ...}` object:
   substance), not a name -- see the id tables below, which are also shown
   in the endpoint's description on the Swagger UI (`/docs`) and in its
   `description` field on `/openapi.json`.
-- `conf-score` (0–1) is the model's own calibrated probability for that
-  label: for `category`, the fraction of the 5 GuidedDCNet folds that
-  agreed; for a substance, its Platt-scaled SMART-NIR ensemble probability
-  of presence (Bước 1) or of Vượt ngưỡng (Bước 2). **It is not a measure of
-  confidence relative to the decision threshold** -- Bước 1/2 thresholds
-  are deliberately picked low (Recall≥0.9, to avoid missing a real
-  detection), so a substance can land in `substances_over_threshold` with
-  a `conf-score` well under 0.5 whenever that's still above its own
-  (low) threshold.
+- `conf-score` (0–1): for `category`, the fraction of the 5 GuidedDCNet
+  folds that agreed. For a substance (Bước 1/2), **not** the model's raw
+  calibrated probability -- that probability recentered around the
+  substance's own decision threshold via a logit shift (`_threshold_confidence`
+  in `utils.py`): exactly 0.5 at the threshold, saturating towards 1 the
+  further past it. Bước 1/2 thresholds are deliberately picked low
+  (Recall≥0.9, to avoid missing a real detection), so the raw probability
+  alone can look unconvincingly low for a clear-cut positive call (e.g.
+  0.16 against a threshold of 0.05); this recentering guarantees every
+  substance reported in `substances_detected`/`substances_over_threshold`
+  has `conf-score` ≥ 0.5.
 
 ```json
 {

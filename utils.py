@@ -173,6 +173,25 @@ def _smartnir_ensemble(spectra: np.ndarray, Ft: "torch.Tensor", data_dir: str, c
     return np.mean(probs, axis=0), float(np.mean(thrs))
 
 
+def _threshold_confidence(prob: np.ndarray, thr: float, temperature: float = 1.0) -> np.ndarray:
+    """Recenters a calibrated probability around its own decision threshold
+    via a logit shift, so the score is exactly 0.5 right at the threshold
+    and saturates towards 0/1 as the probability moves away from it in
+    either direction. Unlike the raw probability, this doesn't look
+    misleadingly low for a positive call when the threshold itself is low
+    (Bước 1/2 thresholds are deliberately tuned for Recall>=0.9, so e.g.
+    prob=0.16 against a threshold of 0.05 is actually a confident positive,
+    not a weak one).
+    """
+    eps = 1e-6
+    p = np.clip(prob, eps, 1 - eps)
+    t = np.clip(thr, eps, 1 - eps)
+    logit_p = np.log(p / (1 - p))
+    logit_t = np.log(t / (1 - t))
+    z = (logit_p - logit_t) / temperature
+    return 1.0 / (1.0 + np.exp(-z))
+
+
 def infer_substances_detection(spectra: np.ndarray, machine: str, categories: List[str]):
     """Buoc 1 -- presence/absence, SMART-NIR + food one-hot
     (checkpoint/substance_regression/stage1_smartnir_os2), 5-fold ensemble."""
@@ -188,10 +207,11 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
         avg_prob, avg_thr = _smartnir_ensemble(spectra, Ft, data_dir, ckpt_dir, substance, device)
         if avg_prob is None:
             continue
+        conf = _threshold_confidence(avg_prob, avg_thr)
         for i, detected in enumerate(avg_prob > avg_thr):
             if detected:
                 results[i].append(substance)
-                confidences[i][substance] = float(avg_prob[i])
+                confidences[i][substance] = float(conf[i])
     return results, confidences
 
 
@@ -214,10 +234,11 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
         if avg_prob is None:
             continue
         verdict = np.where(avg_prob > avg_thr, "Vượt ngưỡng", "An toàn")
+        conf = _threshold_confidence(avg_prob, avg_thr)
         for i, detected in enumerate(detected_list):
             if substance in detected:
                 results[i][substance] = verdict[i]
-                confidences[i][substance] = float(avg_prob[i])  # P(Vuot nguong)
+                confidences[i][substance] = float(conf[i])
     return results, confidences
 
 
@@ -235,13 +256,17 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
 
     Every classification result is a `{"code": ..., "conf-score": ...}`
     object: `category` reports F01..F09 (FOOD_NAME_TO_ID), confidence = the
-    fraction of the 5 GuidedDCNet folds that agreed on it; substances in
+    fraction of the 5 GuidedDCNet folds that agreed on it. Substances in
     `substances_detected`/`substances_over_threshold` report P01..P19
-    (SUBSTANCE_NAME_TO_ID), confidence = that substance's own calibrated
-    SMART-NIR ensemble probability (of presence, resp. of Vượt ngưỡng) --
-    see FOOD_ID_LEGEND / SUBSTANCE_ID_LEGEND in app.py for the id -> name
-    table shown in Swagger. `safe` stays a plain boolean: it's an aggregate
-    over all detected substances, not itself a single model prediction.
+    (SUBSTANCE_NAME_TO_ID); confidence there is `_threshold_confidence`'s
+    logit-shifted score (0.5 at that substance's own decision threshold,
+    saturating towards 1 the further past it), not the raw calibrated
+    probability -- Bước 1/2 thresholds are deliberately low (Recall>=0.9),
+    so the raw probability alone can look unconvincingly low for a clear-cut
+    positive call. See FOOD_ID_LEGEND / SUBSTANCE_ID_LEGEND in app.py for
+    the id -> name table shown in Swagger. `safe` stays a plain boolean:
+    it's an aggregate over all detected substances, not itself a single
+    model prediction.
     """
     categories, cat_conf = infer_category_classification(spectra, machine)
     detected_list, detect_conf = infer_substances_detection(spectra, machine, categories)

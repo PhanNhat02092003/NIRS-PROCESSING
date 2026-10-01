@@ -66,14 +66,15 @@ Mỗi kết quả phân loại là một object `{{"code": ..., "conf-score": ..
 - `category.code`, mỗi phần tử trong `substances_detected` /
   `substances_over_threshold` dùng **id** (không phải tên tiếng Việt), tra
   theo hai bảng dưới đây.
-- `conf-score` (0-1) là xác suất mô hình thật sự ước lượng cho nhãn đó --
-  với `category`, đó là tỉ lệ 5 mô hình fold đồng thuận; với từng thuốc,
-  đó là xác suất đã hiệu chỉnh (Platt scaling) của việc có mặt (Bước 1) hay
-  Vượt ngưỡng (Bước 2). **Đây không phải mức độ chắc chắn so với ngưỡng
-  quyết định** -- ngưỡng Bước 1/2 được chọn thấp để đảm bảo Recall ≥ 0,9
-  (ưu tiên không bỏ sót), nên một thuốc vẫn có thể xuất hiện trong
-  `substances_over_threshold` dù `conf-score` chỉ ở mức thấp (ví dụ 0,15)
-  -- con số đó vẫn vượt ngưỡng quyết định dù chưa tới 0,5.
+- `conf-score` (0-1): với `category`, là tỉ lệ 5 mô hình fold đồng thuận.
+  Với từng thuốc (Bước 1/2), **không phải xác suất gốc của mô hình** mà là
+  xác suất đó sau khi tái tâm quanh ngưỡng quyết định riêng của thuốc đó
+  (dịch theo logit): đúng 0,5 tại ngưỡng, càng vượt xa ngưỡng càng tiến về
+  1. Lý do: ngưỡng Bước 1/2 được chọn thấp để đảm bảo Recall ≥ 0,9, nên nếu
+  dùng thẳng xác suất gốc thì một kết quả dương tính rõ ràng vẫn có thể
+  hiện ra một con số trông thấp (ví dụ 0,15); công thức này đảm bảo mọi
+  thuốc xuất hiện trong `substances_detected` / `substances_over_threshold`
+  luôn có `conf-score` ≥ 0,5.
 
 ### Mã loại rau củ quả (`category`)
 
