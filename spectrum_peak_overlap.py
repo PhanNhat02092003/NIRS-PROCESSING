@@ -6,32 +6,25 @@ actually relies on, via input-gradient saliency on real positive samples.
 
 For each (machine, substance) with cleaned concentration-series data:
   1. "Thực tế" signal: mean absorbance at the highest concentration minus
-     the lowest, |difference| peak-picked with scipy.signal.find_peaks.
+     the lowest (sign kept for plotting; magnitude used for the
+     correlation below).
   2. "Mô hình" signal: |d(logit_diff)/d(normalized input)|, averaged over
-     ~200 real positive samples and over the 5 CV folds, peak-picked the
-     same way.
-  3. Overlap: greedy-matches the top-K peaks of each signal within a
-     wavelength tolerance, reported as a Jaccard-style ratio
-     matched / (2K - matched). The tolerance is expressed in GRID POINTS,
-     not a fixed nm figure: FLAMENIR's native resolution is ~5.9nm/point
-     vs OCEANFX's ~2.7nm/bin after BIN=8, so the same nm tolerance is a
-     very different number of points on each machine (e.g. a flat ±10nm is
-     only ~1.7 FLAMENIR points -- tighter than it looks, and tight enough
-     that a genuinely-matching but 2-3-point-offset peak reads as "no
-     match"). Default TOLERANCE_POINTS=3 is ~17.6nm on FLAMENIR, ~8.0nm on
-     OCEANFX.
+     ~200 real positive samples and over the 5 CV folds, then smoothed
+     with a SMOOTH_POINTS-wide moving average (a raw per-point gradient is
+     noisy in a way the already-smoothed, SNV + Savitzky-Golay
+     real-difference curve isn't).
+  3. Overlap: Pearson correlation between |real difference| and the
+     (smoothed) model saliency curve across the FULL wavelength grid --
+     not just a handful of peak positions. This is a much stronger ask
+     than peak-matching (it requires the two curves to actually track each
+     other point-for-point, not merely have a few local maxima nearby), so
+     expect lower numbers for substances where the model is only sensitive
+     to a few of the real bands rather than the whole shape.
 
 OCEANFX's model operates on BIN=8-averaged wavelengths (264 points, not the
 raw 2136), so the real-spectrum difference curve is averaged the same way
-before peak-picking, so both curves are compared on the same wavelength
+before correlating, so both curves are compared on the same wavelength
 grid the model actually sees.
-
-The model saliency curve (raw per-pixel |gradient|) is noisy at the single
-grid-point level (expected for a gradient map), which can make `find_peaks`
-pick out noise spikes rather than the genuinely broad region a receptor
-cares about; it is smoothed with a SMOOTH_POINTS-wide moving average before
-peak-picking (the real-difference curve is already smooth from SNV +
-Savitzky-Golay, so it isn't re-smoothed).
 
 CNN edge artifact: on FLAMENIR, all 16/16 independently-trained models'
 single largest saliency value landed on the exact same grid point (index
@@ -39,12 +32,14 @@ single largest saliency value landed on the exact same grid point (index
 coincidentally learn the same "chemistry" at one shared pixel, so this is a
 boundary/zero-padding artifact of SmartNIRWithFood's MultiKernelBlock (conv
 kernels up to size 32, stride 4) rather than a real signal. EDGE_EXCLUDE
-points (default 16 = half the largest kernel) are masked out of the MODEL
-saliency curve before peak-picking to stop this artifact from dominating
-the comparison; the real-difference curve is left alone (it isn't produced
-by a padded CNN, so it has no equivalent bias).
+points (default 16 = half the largest kernel) are trimmed off both ends of
+BOTH curves before correlating, so the artifact can't inflate or deflate r.
 
-Usage: python3 spectrum_peak_overlap.py [TOP_K] [TOLERANCE_POINTS] [SMOOTH_POINTS] [EDGE_EXCLUDE]
+Peaks are still marked on each substance's chart (top-K by prominence, per
+curve independently) purely as a visual reference -- they no longer feed
+into the headline overlap number.
+
+Usage: python3 spectrum_peak_overlap.py [TOP_K] [SMOOTH_POINTS] [EDGE_EXCLUDE]
 Writes reports/figs/spectrum_overlap/{machine}_{substance}.png and
 results/spectrum_peak_overlap.json (+ .csv).
 """
@@ -52,7 +47,6 @@ import json
 import os
 import sys
 
-import joblib
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -61,16 +55,16 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 from scipy.signal import find_peaks
+from scipy.stats import pearsonr
 
-from dataset.preprocessing import preprocess_spectra
+from dataset.preprocessing import preprocess_spectra, savgol_smooth, snv
 from stage1_detection import SmartNIRWithFood
 
 load_dotenv()
 
 TOP_K = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-TOLERANCE_POINTS = int(sys.argv[2]) if len(sys.argv) > 2 else 3
-SMOOTH_POINTS = int(sys.argv[3]) if len(sys.argv) > 3 else 3
-EDGE_EXCLUDE = int(sys.argv[4]) if len(sys.argv) > 4 else 16
+SMOOTH_POINTS = int(sys.argv[2]) if len(sys.argv) > 2 else 3
+EDGE_EXCLUDE = int(sys.argv[3]) if len(sys.argv) > 3 else 16
 N_SAMPLES = 200
 K_FOLDS = 5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -104,10 +98,27 @@ def wavelength_axis(machine: str, bin_factor: int):
 
 
 def real_difference_curve(machine: str, substance: str, bin_factor: int):
+    """Mean(rank 1) - mean(rank 5) (highest concentration minus lowest),
+    in the SAME preprocessing domain the model actually sees: each raw
+    replicate spectrum is Savitzky-Golay smoothed + SNV-corrected (matching
+    dataset/preprocessing.py's preprocess_spectra, applied to the raw
+    instrument export, not the already-dark/reference-corrected mean) and
+    *then* averaged per concentration rank. Comparing against the model's
+    saliency without this is comparing two different numerical spaces --
+    the model never sees raw absorbance, it sees SNV output.
+    """
     df = pd.read_csv(f"{CLEAN_DIR}/{machine}/{substance}.csv")
-    mean_by_rank = df.groupby(["rank", "wavelength"])["absorbance"].mean().unstack("rank")
-    mean_by_rank = mean_by_rank.sort_index()
-    diff = (mean_by_rank[1] - mean_by_rank[5]).values  # rank 1 = highest conc, 5 = lowest
+    wl = np.sort(df["wavelength"].unique())
+    mean_by_rank = {}
+    for rank, g in df.groupby("rank"):
+        # pivot_table (not pivot): a few (replicate, wavelength) pairs collide
+        # across sub-batches within the same rank (replicate numbering isn't
+        # globally unique), so duplicates are averaged rather than erroring.
+        spectra = g.pivot_table(index="replicate", columns="wavelength", values="absorbance", aggfunc="mean")
+        spectra = spectra.reindex(columns=wl).dropna(how="any").values.astype(np.float64)
+        processed = snv(savgol_smooth(spectra))
+        mean_by_rank[rank] = processed.mean(axis=0)
+    diff = mean_by_rank[1] - mean_by_rank[5]  # rank 1 = highest conc, 5 = lowest
     return bin_array(diff, bin_factor) if bin_factor > 1 else diff
 
 
@@ -181,26 +192,21 @@ def pick_peaks(curve: np.ndarray, k: int, edge_exclude: int = 0):
     return idx[order][:k]
 
 
-def jaccard_overlap(wl_a, peaks_a, wl_b, peaks_b, tol):
-    pos_a = wl_a[peaks_a]
-    pos_b = list(wl_b[peaks_b])
-    matched = 0
-    for pa in pos_a:
-        for i, pb in enumerate(pos_b):
-            if abs(pa - pb) <= tol:
-                matched += 1
-                pos_b.pop(i)
-                break
-    denom = len(peaks_a) + len(peaks_b) - matched
-    return matched, (matched / denom if denom > 0 else 0.0)
+def full_spectrum_correlation(real_diff: np.ndarray, model_sal: np.ndarray, edge_exclude: int):
+    """Pearson r between |real difference| and model saliency, both curves
+    trimmed by `edge_exclude` points on each end first so the CNN boundary
+    artifact (see module docstring) can't influence the result."""
+    lo, hi = edge_exclude, len(real_diff) - edge_exclude
+    r, p = pearsonr(np.abs(real_diff[lo:hi]), model_sal[lo:hi])
+    return float(r), float(p)
 
 
-def plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, jac, matched):
+def plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, r, p):
     fig, axes = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
     axes[0].plot(wl, real_diff, color="#1b6ca8", lw=1)
     axes[0].plot(wl[real_peaks], real_diff[real_peaks], "o", color="#d1495b", ms=5)
     axes[0].set_ylabel("Chênh lệch hấp thụ\n(nồng độ cao - thấp)")
-    axes[0].set_title(f"{substance} -- {machine} (Jaccard={jac:.2f}, khớp {matched}/{TOP_K})")
+    axes[0].set_title(f"{substance} -- {machine} (r={r:.2f}, p={p:.3f})")
 
     axes[1].plot(wl, model_sal, color="#2a9d8f", lw=1)
     axes[1].plot(wl[model_peaks], model_sal[model_peaks], "o", color="#d1495b", ms=5)
@@ -216,7 +222,6 @@ def plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, mod
 def main():
     rng = np.random.default_rng(42)
     results = []
-    tol_nm_by_machine = {}
 
     for machine in ("FLAMENIR", "OCEANFX"):
         bin_factor = 8 if machine == "OCEANFX" else 1
@@ -228,11 +233,6 @@ def main():
 
         wl = wavelength_axis(machine, bin_factor)
         df, X, F = load_machine_data(machine, bin_factor)
-        # Tolerance in grid points, converted to this machine's own nm/point
-        # spacing -- a flat nm figure would be far stricter on FLAMENIR
-        # (~5.9nm/point) than on OCEANFX (~2.7nm/bin after BIN=8).
-        tol_nm = TOLERANCE_POINTS * np.diff(wl).mean()
-        tol_nm_by_machine[machine] = round(float(tol_nm), 2)
 
         for substance in substances:
             real_diff = real_difference_curve(machine, substance, bin_factor)
@@ -247,34 +247,34 @@ def main():
 
             real_peaks = pick_peaks(real_diff, TOP_K)
             model_peaks = pick_peaks(model_sal, TOP_K, edge_exclude=EDGE_EXCLUDE)
-            matched, jac = jaccard_overlap(wl, real_peaks, wl, model_peaks, tol_nm)
+            r, p = full_spectrum_correlation(real_diff, model_sal, EDGE_EXCLUDE)
 
-            plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, jac, matched)
+            plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, r, p)
             results.append({
                 "machine": machine, "substance": substance,
-                "n_real_peaks": int(len(real_peaks)), "n_model_peaks": int(len(model_peaks)),
-                "matched": int(matched), "jaccard": round(float(jac), 4),
+                "pearson_r": round(r, 4), "pearson_p": round(p, 4),
                 "real_peak_wavelengths": [round(float(x), 1) for x in wl[real_peaks]],
                 "model_peak_wavelengths": [round(float(x), 1) for x in wl[model_peaks]],
             })
-            print(f"  {substance:20s} real_peaks={len(real_peaks):2d} model_peaks={len(model_peaks):2d} "
-                  f"matched={matched:2d} jaccard={jac:.3f}")
+            print(f"  {substance:20s} r={r:+.3f}  p={p:.4f}")
 
     with open("results/spectrum_peak_overlap.json", "w") as f:
         json.dump({
-            "top_k": TOP_K, "tolerance_points": TOLERANCE_POINTS, "smooth_points": SMOOTH_POINTS,
-            "edge_exclude_points": EDGE_EXCLUDE,
-            "tolerance_nm_by_machine": tol_nm_by_machine, "results": results,
+            "top_k": TOP_K, "smooth_points": SMOOTH_POINTS, "edge_exclude_points": EDGE_EXCLUDE,
+            "metric": "pearson_r between |real concentration-difference| and smoothed model saliency, full spectrum",
+            "results": results,
         }, f, indent=2, ensure_ascii=False)
-    res_df = pd.DataFrame(results).sort_values("jaccard")
+    res_df = pd.DataFrame(results).sort_values("pearson_r")
     res_df.to_csv("results/spectrum_peak_overlap.csv", index=False)
     print(f"\nWrote results/spectrum_peak_overlap.{{json,csv}} ({len(results)} rows), figures under {FIG_DIR}/")
 
     labels = res_df["machine"] + " / " + res_df["substance"]
+    colors = ["#d1495b" if r < 0 else "#2a9d8f" for r in res_df["pearson_r"]]
     fig, ax = plt.subplots(figsize=(8, max(4, 0.3 * len(res_df))))
-    ax.barh(labels, res_df["jaccard"], color="#2a9d8f")
-    ax.set_xlabel(f"Jaccard (top-{TOP_K} đỉnh, dung sai ±{TOLERANCE_POINTS} điểm lưới)")
-    ax.set_title("Độ trùng lặp peak thực tế vs. độ nhạy mô hình, theo thuốc", fontsize=11)
+    ax.barh(labels, res_df["pearson_r"], color=colors)
+    ax.axvline(0, color="black", lw=0.8)
+    ax.set_xlabel("Tương quan Pearson (|chênh lệch thực tế| vs. độ nhạy mô hình, toàn phổ)")
+    ax.set_title("Tương quan toàn phổ: thực tế vs. độ nhạy mô hình, theo thuốc", fontsize=11)
     fig.tight_layout()
     fig.savefig(f"{FIG_DIR}/_summary.png", dpi=130)
     plt.close(fig)
