@@ -33,7 +33,18 @@ cares about; it is smoothed with a SMOOTH_POINTS-wide moving average before
 peak-picking (the real-difference curve is already smooth from SNV +
 Savitzky-Golay, so it isn't re-smoothed).
 
-Usage: python3 spectrum_peak_overlap.py [TOP_K] [TOLERANCE_POINTS] [SMOOTH_POINTS]
+CNN edge artifact: on FLAMENIR, all 16/16 independently-trained models'
+single largest saliency value landed on the exact same grid point (index
+121/127, 6 points from the right edge) -- 16 separately-fit models can't
+coincidentally learn the same "chemistry" at one shared pixel, so this is a
+boundary/zero-padding artifact of SmartNIRWithFood's MultiKernelBlock (conv
+kernels up to size 32, stride 4) rather than a real signal. EDGE_EXCLUDE
+points (default 16 = half the largest kernel) are masked out of the MODEL
+saliency curve before peak-picking to stop this artifact from dominating
+the comparison; the real-difference curve is left alone (it isn't produced
+by a padded CNN, so it has no equivalent bias).
+
+Usage: python3 spectrum_peak_overlap.py [TOP_K] [TOLERANCE_POINTS] [SMOOTH_POINTS] [EDGE_EXCLUDE]
 Writes reports/figs/spectrum_overlap/{machine}_{substance}.png and
 results/spectrum_peak_overlap.json (+ .csv).
 """
@@ -59,6 +70,7 @@ load_dotenv()
 TOP_K = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 TOLERANCE_POINTS = int(sys.argv[2]) if len(sys.argv) > 2 else 3
 SMOOTH_POINTS = int(sys.argv[3]) if len(sys.argv) > 3 else 3
+EDGE_EXCLUDE = int(sys.argv[4]) if len(sys.argv) > 4 else 16
 N_SAMPLES = 200
 K_FOLDS = 5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -156,8 +168,12 @@ def smooth_curve(curve: np.ndarray, window: int) -> np.ndarray:
     return np.convolve(curve, kernel, mode="same")
 
 
-def pick_peaks(curve: np.ndarray, k: int):
+def pick_peaks(curve: np.ndarray, k: int, edge_exclude: int = 0):
     mag = np.abs(curve)
+    if edge_exclude > 0:
+        mag = mag.copy()
+        mag[:edge_exclude] = 0
+        mag[len(mag) - edge_exclude:] = 0
     idx, props = find_peaks(mag, prominence=mag.std() * 0.1)
     if len(idx) == 0:
         return np.array([], dtype=int)
@@ -230,7 +246,7 @@ def main():
             model_sal = smooth_curve(model_sal, SMOOTH_POINTS)
 
             real_peaks = pick_peaks(real_diff, TOP_K)
-            model_peaks = pick_peaks(model_sal, TOP_K)
+            model_peaks = pick_peaks(model_sal, TOP_K, edge_exclude=EDGE_EXCLUDE)
             matched, jac = jaccard_overlap(wl, real_peaks, wl, model_peaks, tol_nm)
 
             plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, jac, matched)
@@ -247,6 +263,7 @@ def main():
     with open("results/spectrum_peak_overlap.json", "w") as f:
         json.dump({
             "top_k": TOP_K, "tolerance_points": TOLERANCE_POINTS, "smooth_points": SMOOTH_POINTS,
+            "edge_exclude_points": EDGE_EXCLUDE,
             "tolerance_nm_by_machine": tol_nm_by_machine, "results": results,
         }, f, indent=2, ensure_ascii=False)
     res_df = pd.DataFrame(results).sort_values("jaccard")

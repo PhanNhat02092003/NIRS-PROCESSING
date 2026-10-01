@@ -2,6 +2,7 @@
   "top_k": 10,
   "tolerance_points": 3,
   "smooth_points": 3,
+  "edge_exclude_points": 16,
   "tolerance_nm_by_machine": {
     "FLAMENIR": 17.62,
     "OCEANFX": 8.04
@@ -12,8 +13,8 @@
       "substance": "Abamectin",
       "n_real_peaks": 6,
       "n_model_peaks": 10,
-      "matched": 2,
-      "jaccard": 0.1429,
+      "matched": 1,
+      "jaccard": 0.0667,
       "real_peak_wavelengths": [
         1427.5,
         1210.0,
@@ -23,16 +24,16 @@
         1561.9
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1333.6,
         1251.3,
         1109.6,
+        1614.4,
         1509.4,
-        979.3,
         1585.3,
-        1038.6,
         1345.4,
-        1701.7
+        1062.3,
+        1462.6,
+        1263.0
       ]
     },
     {
@@ -40,8 +41,8 @@
       "substance": "Chlopyrifos Methyl",
       "n_real_peaks": 5,
       "n_model_peaks": 10,
-      "matched": 2,
-      "jaccard": 0.1538,
+      "matched": 3,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1415.8,
         1186.4,
@@ -50,25 +51,25 @@
         1026.7
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
         1251.3,
-        1298.4,
-        991.1,
         1509.4,
-        1626.1,
+        1298.4,
         1086.0,
-        967.4,
-        1180.5
+        1614.4,
+        1180.5,
+        1439.2,
+        1532.8,
+        1556.1
       ]
     },
     {
       "machine": "FLAMENIR",
       "substance": "Chlorantraniliprol",
       "n_real_peaks": 10,
-      "n_model_peaks": 9,
-      "matched": 1,
-      "jaccard": 0.0556,
+      "n_model_peaks": 10,
+      "matched": 3,
+      "jaccard": 0.1765,
       "real_peak_wavelengths": [
         1156.9,
         1602.8,
@@ -82,15 +83,16 @@
         1550.3
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
         1227.7,
-        1038.6,
+        1614.4,
         1538.6,
-        1626.1,
-        991.1,
+        1062.3,
         1251.3,
-        1239.5
+        1239.5,
+        1602.8,
+        1462.6,
+        1474.3
       ]
     },
     {
@@ -98,8 +100,8 @@
       "substance": "Chlorothalonil",
       "n_real_peaks": 6,
       "n_model_peaks": 10,
-      "matched": 4,
-      "jaccard": 0.3333,
+      "matched": 2,
+      "jaccard": 0.1429,
       "real_peak_wavelengths": [
         1415.8,
         1579.4,
@@ -109,16 +111,16 @@
         1643.5
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1333.6,
-        1661.0,
-        967.4,
+        1608.6,
+        1086.0,
         1251.3,
         1345.4,
-        1086.0,
         1509.4,
-        1701.7,
-        991.1
+        1239.5,
+        1263.0,
+        1521.1,
+        1227.7
       ]
     },
     {
@@ -126,8 +128,8 @@
       "substance": "Chlothianidin",
       "n_real_peaks": 10,
       "n_model_peaks": 10,
-      "matched": 2,
-      "jaccard": 0.1111,
+      "matched": 4,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1415.8,
         1521.1,
@@ -141,16 +143,16 @@
         1474.3
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
         1532.8,
         1062.3,
         1251.3,
-        967.4,
         1333.6,
         1497.7,
         1121.5,
-        1298.4
+        1298.4,
+        1097.8,
+        1614.4
       ]
     },
     {
@@ -158,8 +160,8 @@
       "substance": "Cyantraniliprole",
       "n_real_peaks": 6,
       "n_model_peaks": 10,
-      "matched": 0,
-      "jaccard": 0.0,
+      "matched": 1,
+      "jaccard": 0.0667,
       "real_peak_wavelengths": [
         1409.9,
         1156.9,
@@ -169,16 +171,16 @@
         1614.4
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1333.6,
-        1109.6,
         1486.0,
+        1109.6,
         1227.7,
-        991.1,
         1345.4,
+        1614.4,
         1097.8,
-        1701.7,
-        1321.9
+        1321.9,
+        1532.8,
+        1251.3
       ]
     },
     {
@@ -186,8 +188,8 @@
       "substance": "Cyhalothrin",
       "n_real_peaks": 10,
       "n_model_peaks": 10,
-      "matched": 6,
-      "jaccard": 0.4286,
+      "matched": 4,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1415.8,
         1192.3,
@@ -201,25 +203,25 @@
         1585.3
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1109.6,
         1345.4,
+        1532.8,
         1274.8,
         1227.7,
-        1532.8,
-        1626.1,
-        1038.6,
-        1701.7,
-        1333.6
+        1614.4,
+        1333.6,
+        1497.7,
+        1450.9,
+        1462.6
       ]
     },
     {
       "machine": "FLAMENIR",
       "substance": "Difenoconazole",
       "n_real_peaks": 6,
-      "n_model_peaks": 10,
+      "n_model_peaks": 9,
       "matched": 3,
-      "jaccard": 0.2308,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1427.5,
         1643.5,
@@ -229,25 +231,24 @@
         1351.2
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
+        1614.4,
         1251.3,
         1121.5,
         1509.4,
-        1050.4,
-        1014.9,
+        1062.3,
         1532.8,
-        979.3,
-        1521.1
+        1521.1,
+        1109.6
       ]
     },
     {
       "machine": "FLAMENIR",
       "substance": "Emamectin benzoate",
       "n_real_peaks": 4,
-      "n_model_peaks": 9,
-      "matched": 0,
-      "jaccard": 0.0,
+      "n_model_peaks": 10,
+      "matched": 1,
+      "jaccard": 0.0769,
       "real_peak_wavelengths": [
         1427.5,
         1596.9,
@@ -255,15 +256,16 @@
         1227.7
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
-        1251.3,
         1509.4,
-        1038.6,
+        1251.3,
+        1614.4,
         1109.6,
-        1333.6,
         1062.3,
-        1263.0
+        1333.6,
+        1263.0,
+        1145.1,
+        1156.9
       ]
     },
     {
@@ -271,24 +273,24 @@
       "substance": "Flutolanil",
       "n_real_peaks": 3,
       "n_model_peaks": 10,
-      "matched": 2,
-      "jaccard": 0.1818,
+      "matched": 1,
+      "jaccard": 0.0833,
       "real_peak_wavelengths": [
         1433.3,
         1637.7,
         1115.5
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1109.6,
         1345.4,
         1227.7,
-        967.4,
+        1614.4,
         1509.4,
-        1649.3,
         1239.5,
         1462.6,
-        1251.3
+        1251.3,
+        1086.0,
+        1521.1
       ]
     },
     {
@@ -296,20 +298,20 @@
       "substance": "Imidaclopird",
       "n_real_peaks": 2,
       "n_model_peaks": 7,
-      "matched": 0,
-      "jaccard": 0.0,
+      "matched": 1,
+      "jaccard": 0.125,
       "real_peak_wavelengths": [
         1409.9,
         1156.9
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
         1239.5,
         1538.6,
         1109.6,
-        1003.0,
-        1227.7
+        1614.4,
+        1227.7,
+        1427.5
       ]
     },
     {
@@ -317,8 +319,8 @@
       "substance": "Indoxacarb",
       "n_real_peaks": 5,
       "n_model_peaks": 10,
-      "matched": 1,
-      "jaccard": 0.0714,
+      "matched": 3,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1433.3,
         1591.1,
@@ -327,16 +329,16 @@
         1008.9
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
         1227.7,
         1062.3,
         1509.4,
+        1591.1,
         1215.9,
-        991.1,
         1251.3,
-        1026.7,
-        1050.4
+        1532.8,
+        1415.8,
+        1602.8
       ]
     },
     {
@@ -355,16 +357,16 @@
         1168.7
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1274.8,
         1345.4,
+        1614.4,
         1497.7,
-        1684.2,
         1097.8,
-        1637.7,
         1251.3,
         1333.6,
-        1215.9
+        1215.9,
+        1357.1,
+        1509.4
       ]
     },
     {
@@ -372,8 +374,8 @@
       "substance": "Permethrin",
       "n_real_peaks": 9,
       "n_model_peaks": 10,
-      "matched": 4,
-      "jaccard": 0.2667,
+      "matched": 5,
+      "jaccard": 0.3571,
       "real_peak_wavelengths": [
         1409.9,
         1695.9,
@@ -386,16 +388,16 @@
         1596.9
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
-        967.4,
+        1614.4,
         1086.0,
         1239.5,
         1509.4,
-        1649.3,
         1556.1,
         1333.6,
-        1062.3
+        1062.3,
+        1074.1,
+        1263.0
       ]
     },
     {
@@ -403,8 +405,8 @@
       "substance": "Propamocarb.HCL",
       "n_real_peaks": 10,
       "n_model_peaks": 10,
-      "matched": 5,
-      "jaccard": 0.3333,
+      "matched": 4,
+      "jaccard": 0.25,
       "real_peak_wavelengths": [
         1439.2,
         1115.5,
@@ -418,16 +420,16 @@
         1086.0
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1345.4,
+        1614.4,
         1227.7,
-        1684.2,
-        1038.6,
-        1695.9,
         1509.4,
-        967.4,
-        1626.1,
-        1215.9
+        1056.4,
+        1215.9,
+        1239.5,
+        1544.4,
+        1263.0,
+        1333.6
       ]
     },
     {
@@ -435,24 +437,24 @@
       "substance": "Triadimefon",
       "n_real_peaks": 3,
       "n_model_peaks": 10,
-      "matched": 1,
-      "jaccard": 0.0833,
+      "matched": 0,
+      "jaccard": 0.0,
       "real_peak_wavelengths": [
         1404.0,
         1162.8,
         1684.2
       ],
       "model_peak_wavelengths": [
-        1672.6,
         1251.3,
-        1014.9,
         1086.0,
+        1614.4,
         1345.4,
-        1649.3,
         1274.8,
         1227.7,
         1204.1,
-        1298.4
+        1298.4,
+        1509.4,
+        1239.5
       ]
     },
     {
@@ -482,9 +484,9 @@
         484.5,
         807.7,
         963.0,
-        320.7,
         911.2,
-        394.7
+        394.7,
+        646.5
       ]
     },
     {
@@ -492,8 +494,8 @@
       "substance": "Chlothianidin",
       "n_real_peaks": 10,
       "n_model_peaks": 10,
-      "matched": 4,
-      "jaccard": 0.25,
+      "matched": 3,
+      "jaccard": 0.1765,
       "real_peak_wavelengths": [
         326.9,
         348.7,
@@ -510,13 +512,13 @@
         764.0,
         668.4,
         446.0,
-        354.9,
         918.4,
         531.1,
         646.5,
+        367.2,
         416.0,
-        323.8,
-        805.1
+        805.1,
+        937.3
       ]
     },
     {
@@ -548,7 +550,7 @@
         842.8,
         899.2,
         646.5,
-        330.1
+        911.2
       ]
     }
   ]
