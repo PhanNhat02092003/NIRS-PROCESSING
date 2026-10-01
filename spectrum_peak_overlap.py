@@ -12,14 +12,28 @@ For each (machine, substance) with cleaned concentration-series data:
      same way.
   3. Overlap: greedy-matches the top-K peaks of each signal within a
      wavelength tolerance, reported as a Jaccard-style ratio
-     matched / (2K - matched).
+     matched / (2K - matched). The tolerance is expressed in GRID POINTS,
+     not a fixed nm figure: FLAMENIR's native resolution is ~5.9nm/point
+     vs OCEANFX's ~2.7nm/bin after BIN=8, so the same nm tolerance is a
+     very different number of points on each machine (e.g. a flat ±10nm is
+     only ~1.7 FLAMENIR points -- tighter than it looks, and tight enough
+     that a genuinely-matching but 2-3-point-offset peak reads as "no
+     match"). Default TOLERANCE_POINTS=3 is ~17.6nm on FLAMENIR, ~8.0nm on
+     OCEANFX.
 
 OCEANFX's model operates on BIN=8-averaged wavelengths (264 points, not the
 raw 2136), so the real-spectrum difference curve is averaged the same way
 before peak-picking, so both curves are compared on the same wavelength
 grid the model actually sees.
 
-Usage: python3 spectrum_peak_overlap.py [TOP_K] [TOLERANCE_NM]
+The model saliency curve (raw per-pixel |gradient|) is noisy at the single
+grid-point level (expected for a gradient map), which can make `find_peaks`
+pick out noise spikes rather than the genuinely broad region a receptor
+cares about; it is smoothed with a SMOOTH_POINTS-wide moving average before
+peak-picking (the real-difference curve is already smooth from SNV +
+Savitzky-Golay, so it isn't re-smoothed).
+
+Usage: python3 spectrum_peak_overlap.py [TOP_K] [TOLERANCE_POINTS] [SMOOTH_POINTS]
 Writes reports/figs/spectrum_overlap/{machine}_{substance}.png and
 results/spectrum_peak_overlap.json (+ .csv).
 """
@@ -43,7 +57,8 @@ from stage1_detection import SmartNIRWithFood
 load_dotenv()
 
 TOP_K = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-TOLERANCE_NM = float(sys.argv[2]) if len(sys.argv) > 2 else 10.0
+TOLERANCE_POINTS = int(sys.argv[2]) if len(sys.argv) > 2 else 3
+SMOOTH_POINTS = int(sys.argv[3]) if len(sys.argv) > 3 else 3
 N_SAMPLES = 200
 K_FOLDS = 5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -134,6 +149,13 @@ def model_saliency_curve(machine: str, substance: str, df, X, F, rng):
     return np.mean(saliencies, axis=0)
 
 
+def smooth_curve(curve: np.ndarray, window: int) -> np.ndarray:
+    if window <= 1:
+        return curve
+    kernel = np.ones(window) / window
+    return np.convolve(curve, kernel, mode="same")
+
+
 def pick_peaks(curve: np.ndarray, k: int):
     mag = np.abs(curve)
     idx, props = find_peaks(mag, prominence=mag.std() * 0.1)
@@ -178,6 +200,7 @@ def plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, mod
 def main():
     rng = np.random.default_rng(42)
     results = []
+    tol_nm_by_machine = {}
 
     for machine in ("FLAMENIR", "OCEANFX"):
         bin_factor = 8 if machine == "OCEANFX" else 1
@@ -189,6 +212,11 @@ def main():
 
         wl = wavelength_axis(machine, bin_factor)
         df, X, F = load_machine_data(machine, bin_factor)
+        # Tolerance in grid points, converted to this machine's own nm/point
+        # spacing -- a flat nm figure would be far stricter on FLAMENIR
+        # (~5.9nm/point) than on OCEANFX (~2.7nm/bin after BIN=8).
+        tol_nm = TOLERANCE_POINTS * np.diff(wl).mean()
+        tol_nm_by_machine[machine] = round(float(tol_nm), 2)
 
         for substance in substances:
             real_diff = real_difference_curve(machine, substance, bin_factor)
@@ -199,10 +227,11 @@ def main():
             if model_sal is None:
                 print(f"  {substance}: SKIP (no trained fold checkpoints)")
                 continue
+            model_sal = smooth_curve(model_sal, SMOOTH_POINTS)
 
             real_peaks = pick_peaks(real_diff, TOP_K)
             model_peaks = pick_peaks(model_sal, TOP_K)
-            matched, jac = jaccard_overlap(wl, real_peaks, wl, model_peaks, TOLERANCE_NM)
+            matched, jac = jaccard_overlap(wl, real_peaks, wl, model_peaks, tol_nm)
 
             plot_substance(machine, substance, wl, real_diff, model_sal, real_peaks, model_peaks, jac, matched)
             results.append({
@@ -216,7 +245,10 @@ def main():
                   f"matched={matched:2d} jaccard={jac:.3f}")
 
     with open("results/spectrum_peak_overlap.json", "w") as f:
-        json.dump({"top_k": TOP_K, "tolerance_nm": TOLERANCE_NM, "results": results}, f, indent=2, ensure_ascii=False)
+        json.dump({
+            "top_k": TOP_K, "tolerance_points": TOLERANCE_POINTS, "smooth_points": SMOOTH_POINTS,
+            "tolerance_nm_by_machine": tol_nm_by_machine, "results": results,
+        }, f, indent=2, ensure_ascii=False)
     res_df = pd.DataFrame(results).sort_values("jaccard")
     res_df.to_csv("results/spectrum_peak_overlap.csv", index=False)
     print(f"\nWrote results/spectrum_peak_overlap.{{json,csv}} ({len(results)} rows), figures under {FIG_DIR}/")
@@ -224,7 +256,7 @@ def main():
     labels = res_df["machine"] + " / " + res_df["substance"]
     fig, ax = plt.subplots(figsize=(8, max(4, 0.3 * len(res_df))))
     ax.barh(labels, res_df["jaccard"], color="#2a9d8f")
-    ax.set_xlabel(f"Jaccard (top-{TOP_K} đỉnh, dung sai ±{TOLERANCE_NM:g}nm)")
+    ax.set_xlabel(f"Jaccard (top-{TOP_K} đỉnh, dung sai ±{TOLERANCE_POINTS} điểm lưới)")
     ax.set_title("Độ trùng lặp peak thực tế vs. độ nhạy mô hình, theo thuốc", fontsize=11)
     fig.tight_layout()
     fig.savefig(f"{FIG_DIR}/_summary.png", dpi=130)
