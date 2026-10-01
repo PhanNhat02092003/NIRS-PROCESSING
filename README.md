@@ -135,19 +135,30 @@ per-food prior). `safe` is true only if every detected substance came back
 An toàn; `substances_over_threshold` is read off that same per-substance
 result, so it is always a subset of `substances_detected`.
 
-`category` and every substance id are returned as **ids** (`F01`..`F09`,
-`P01`..`P19`), not names -- see the id tables below, which are also shown
-in the endpoint's description on the Swagger UI (`/docs`) and in its
-`description` field on `/openapi.json`.
+Every classification result is a `{"code": ..., "conf-score": ...}` object:
+
+- `code` is an **id** (`F01`..`F09` for `category`, `P01`..`P19` for every
+  substance), not a name -- see the id tables below, which are also shown
+  in the endpoint's description on the Swagger UI (`/docs`) and in its
+  `description` field on `/openapi.json`.
+- `conf-score` (0–1) is the model's own calibrated probability for that
+  label: for `category`, the fraction of the 5 GuidedDCNet folds that
+  agreed; for a substance, its Platt-scaled SMART-NIR ensemble probability
+  of presence (Bước 1) or of Vượt ngưỡng (Bước 2). **It is not a measure of
+  confidence relative to the decision threshold** -- Bước 1/2 thresholds
+  are deliberately picked low (Recall≥0.9, to avoid missing a real
+  detection), so a substance can land in `substances_over_threshold` with
+  a `conf-score` well under 0.5 whenever that's still above its own
+  (low) threshold.
 
 ```json
 {
   "results": [
     {
-      "category": "F03",
-      "substances_detected": ["P01"],
+      "category": {"code": "F03", "conf-score": 1.0},
+      "substances_detected": [{"code": "P01", "conf-score": 0.89}],
       "safe": false,
-      "substances_over_threshold": ["P01"]
+      "substances_over_threshold": [{"code": "P01", "conf-score": 0.63}]
     }
   ]
 }

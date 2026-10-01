@@ -125,10 +125,12 @@ def infer_category_classification(spectra: np.ndarray, machine: str):
 
     all_labels = np.array(all_labels)  # (k_folds, batch_size)
     voted_preds = []
+    confidences = []
     for i in range(spectra.shape[0]):
-        votes = Counter(all_labels[:, i])
-        voted_preds.append(votes.most_common(1)[0][0])
-    return voted_preds
+        label, votes = Counter(all_labels[:, i]).most_common(1)[0]
+        voted_preds.append(label)
+        confidences.append(votes / K_FOLDS)  # fraction of the 5 folds agreeing
+    return voted_preds, confidences
 
 
 def _smartnir_ensemble(spectra: np.ndarray, Ft: "torch.Tensor", data_dir: str, ckpt_dir: str,
@@ -179,6 +181,7 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
     Ft = torch.tensor(_food_onehot(categories), device=device)
 
     results = [[] for _ in range(len(spectra))]
+    confidences = [{} for _ in range(len(spectra))]
     for substance in SUBSTANCES:
         data_dir = f"data/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
         ckpt_dir = f"checkpoint/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
@@ -188,7 +191,8 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
         for i, detected in enumerate(avg_prob > avg_thr):
             if detected:
                 results[i].append(substance)
-    return results
+                confidences[i][substance] = float(avg_prob[i])
+    return results, confidences
 
 
 def infer_substances_severity(spectra: np.ndarray, machine: str, categories: List[str],
@@ -201,6 +205,7 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
     food_idx = np.array([FOOD_NAME_TO_INDEX.get(c, 0) for c in categories])
 
     results = [{s: None for s in detected} for detected in detected_list]
+    confidences = [{} for _ in detected_list]
     substances_needed = sorted({s for detected in detected_list for s in detected})
     for substance in substances_needed:
         data_dir = f"data/substance_severity_smartnir/{machine}/{substance}"
@@ -212,7 +217,12 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
         for i, detected in enumerate(detected_list):
             if substance in detected:
                 results[i][substance] = verdict[i]
-    return results
+                confidences[i][substance] = float(avg_prob[i])  # P(Vuot nguong)
+    return results, confidences
+
+
+def _coded(code: str, conf: float) -> dict:
+    return {"code": code, "conf-score": round(conf, 4)}
 
 
 def analyze_spectrum(spectra: np.ndarray, machine: str):
@@ -223,22 +233,27 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     derived from that same per-substance verdict, so it can never name a
     substance outside `substances_detected`.
 
-    Categories and substances are reported as their F01..F09 / P01..P19 ids
-    (FOOD_NAME_TO_ID / SUBSTANCE_NAME_TO_ID) rather than the Vietnamese/full
-    names used internally -- see FOOD_ID_LEGEND / SUBSTANCE_ID_LEGEND in
-    app.py for the id -> name table shown in Swagger.
+    Every classification result is a `{"code": ..., "conf-score": ...}`
+    object: `category` reports F01..F09 (FOOD_NAME_TO_ID), confidence = the
+    fraction of the 5 GuidedDCNet folds that agreed on it; substances in
+    `substances_detected`/`substances_over_threshold` report P01..P19
+    (SUBSTANCE_NAME_TO_ID), confidence = that substance's own calibrated
+    SMART-NIR ensemble probability (of presence, resp. of Vượt ngưỡng) --
+    see FOOD_ID_LEGEND / SUBSTANCE_ID_LEGEND in app.py for the id -> name
+    table shown in Swagger. `safe` stays a plain boolean: it's an aggregate
+    over all detected substances, not itself a single model prediction.
     """
-    categories = infer_category_classification(spectra, machine)
-    detected_list = infer_substances_detection(spectra, machine, categories)
-    severity_list = infer_substances_severity(spectra, machine, categories, detected_list)
+    categories, cat_conf = infer_category_classification(spectra, machine)
+    detected_list, detect_conf = infer_substances_detection(spectra, machine, categories)
+    severity_list, severity_conf = infer_substances_severity(spectra, machine, categories, detected_list)
 
     results = []
-    for category, detected, severity in zip(categories, detected_list, severity_list):
+    for i, (category, detected, severity) in enumerate(zip(categories, detected_list, severity_list)):
         over_threshold = [s for s, verdict in severity.items() if verdict == "Vượt ngưỡng"]
         results.append({
-            "category": FOOD_NAME_TO_ID[category],
-            "substances_detected": [SUBSTANCE_NAME_TO_ID[s] for s in detected],
+            "category": _coded(FOOD_NAME_TO_ID[category], cat_conf[i]),
+            "substances_detected": [_coded(SUBSTANCE_NAME_TO_ID[s], detect_conf[i][s]) for s in detected],
             "safe": len(over_threshold) == 0,
-            "substances_over_threshold": [SUBSTANCE_NAME_TO_ID[s] for s in over_threshold],
+            "substances_over_threshold": [_coded(SUBSTANCE_NAME_TO_ID[s], severity_conf[i][s]) for s in over_threshold],
         })
     return results
