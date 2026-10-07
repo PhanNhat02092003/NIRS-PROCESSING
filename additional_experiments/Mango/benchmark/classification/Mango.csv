@@ -1,0 +1,4 @@
+method     , accuracy_mean, accuracy_std, precision_mean, precision_std, recall_mean, recall_std, f1_mean, f1_std
+SMART-NIR  ,         96.97,         1.13,          96.51,          1.37,       97.25,       0.71,   96.87,   1.05
+GuidedDCNet,         99.49,         0.07,          99.50,          0.10,       99.40,       0.08,   99.45,   0.08
+CSSE-MT    ,         99.17,         0.05,          98.95,          0.14,       98.93,       0.08,   98.94,   0.06
