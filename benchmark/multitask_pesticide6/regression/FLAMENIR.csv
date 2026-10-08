@@ -1,0 +1,13 @@
+substance     , method          , mse_mean  , mse_std  , mae_mean, mae_std, rmse_mean, rmse_std, r2_mean, r2_std
+Thiamethoxam  , MT-SMARTNIR     ,   461.1203,  208.0208,   5.3030,  0.6925,   21.0227,   4.3778,   39.00,  19.23
+Permethrin    , MT-SMARTNIR     ,  2803.2148,  517.5839,  15.9230,  1.7321,   52.7211,   4.8678,   49.70,  12.24
+Azoxystrobin  , MT-SMARTNIR     , 11257.4766, 5667.2773,  15.3292,  3.8042,  102.9204,  25.7849,   33.78,  31.43
+Difenoconazole, MT-SMARTNIR     ,   672.9680,  253.9238,   4.1337,  0.8275,   25.4286,   5.1338,   79.74,   8.71
+Cypermethrin  , MT-SMARTNIR     ,     1.0737,    0.4405,   0.4820,  0.1062,    1.0185,   0.1907,   67.00,  12.29
+Chlothianidin , MT-SMARTNIR     ,   191.2312,  123.6591,   2.1249,  0.6557,   13.2203,   4.0566,   73.39,  12.88
+Thiamethoxam  , XSpecMamba-joint,   374.1093,   37.0004,   5.6852,  0.0630,   19.3182,   0.9577,   40.51,   7.89
+Permethrin    , XSpecMamba-joint,  3234.0503,  464.2614,  17.8727,  2.0544,   56.7213,   4.0925,   40.30,   3.73
+Azoxystrobin  , XSpecMamba-joint,  8740.9463,  167.4248,  15.7304,  0.3467,   93.4887,   0.8954,   45.04,   1.94
+Difenoconazole, XSpecMamba-joint,  1260.4309,   11.7547,   6.0311,  0.2580,   35.5022,   0.1655,   64.33,   4.95
+Cypermethrin  , XSpecMamba-joint,     1.1758,    0.0260,   0.6129,  0.0280,    1.0843,   0.0120,   63.91,   2.40
+Chlothianidin , XSpecMamba-joint,   408.2848,   42.3448,   2.8630,  0.0076,   20.1788,   1.0492,   36.09,   8.38

@@ -743,6 +743,11 @@ def main_xspecmamba():
         'Chlorothalonil', 'Triadimefon', 'Cyantraniliprole', 'Flutolanil',
         'Indoxacarb', 'Abamectin', 'Propamocarb.HCL', 'Chlothianidin'
     ]
+    # Optional SUBSTANCES=A,B,C env override to restrict this run to a
+    # subset (e.g. a later report scoped to fewer compounds) without
+    # touching the full-19 default used by prior runs.
+    if os.environ.get("SUBSTANCES"):
+        substances = [s.strip() for s in os.environ["SUBSTANCES"].split(",")]
 
     for substance in substances:
         print(f"Training for {substance}")

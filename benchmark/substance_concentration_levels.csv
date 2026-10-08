@@ -1,0 +1,39 @@
+machine,substance,n_positive_samples,n_unique_levels
+FLAMENIR,Thiamethoxam,119816,109
+FLAMENIR,Permethrin,24809,20
+FLAMENIR,Metalaxyl,4161,2
+FLAMENIR,Azoxystrobin,12734,15
+FLAMENIR,Imidaclopird,18633,12
+FLAMENIR,Difenoconazole,12628,15
+FLAMENIR,Cypermethrin,12922,10
+FLAMENIR,Cyhalothrin,3318,3
+FLAMENIR,Chlorantraniliprol,1630,2
+FLAMENIR,Chlopyrifos Methyl,1881,2
+FLAMENIR,Emamectin benzoate,13190,9
+FLAMENIR,Chlorothalonil,14835,14
+FLAMENIR,Triadimefon,0,0
+FLAMENIR,Cyantraniliprole,10050,9
+FLAMENIR,Flutolanil,26768,23
+FLAMENIR,Indoxacarb,6893,5
+FLAMENIR,Abamectin,10281,9
+FLAMENIR,Propamocarb.HCL,0,0
+FLAMENIR,Chlothianidin,6806,10
+OCEANFX,Thiamethoxam,33238,32
+OCEANFX,Permethrin,37513,29
+OCEANFX,Metalaxyl,31224,28
+OCEANFX,Azoxystrobin,12621,18
+OCEANFX,Imidaclopird,4400,3
+OCEANFX,Difenoconazole,12340,18
+OCEANFX,Cypermethrin,65911,55
+OCEANFX,Cyhalothrin,17198,9
+OCEANFX,Chlorantraniliprol,2887,2
+OCEANFX,Chlopyrifos Methyl,3805,2
+OCEANFX,Emamectin benzoate,28599,27
+OCEANFX,Chlorothalonil,8386,6
+OCEANFX,Triadimefon,0,0
+OCEANFX,Cyantraniliprole,0,0
+OCEANFX,Flutolanil,0,0
+OCEANFX,Indoxacarb,6074,5
+OCEANFX,Abamectin,29740,23
+OCEANFX,Propamocarb.HCL,0,0
+OCEANFX,Chlothianidin,42907,44
