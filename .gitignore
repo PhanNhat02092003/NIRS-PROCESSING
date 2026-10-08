@@ -4,9 +4,11 @@
 *.csv
 
 # ...except the hand-maintained method-comparison tables under each
-# additional_experiments/{Dataset}/benchmark/ -- these are report results,
-# not raw/derived data, and are small enough to track.
+# additional_experiments/{Dataset}/benchmark/ and the root-level benchmark/
+# (main Danang-NIR pesticide-6 multitask results) -- these are report
+# results, not raw/derived data, and are small enough to track.
 !additional_experiments/*/benchmark/**/*.csv
+!benchmark/**/*.csv
 
 __pycache__/
 *.py[cod]

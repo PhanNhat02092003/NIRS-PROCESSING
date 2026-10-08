@@ -1,0 +1,2 @@
+method     , accuracy_mean, accuracy_std, precision_mean, precision_std, recall_mean, recall_std, f1_mean, f1_std
+MT-SMARTNIR,         86.77,         1.63,          57.73,          3.61,       89.54,       1.49,   69.37,   2.98

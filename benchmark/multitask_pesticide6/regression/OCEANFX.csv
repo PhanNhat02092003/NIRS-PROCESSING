@@ -1,0 +1,7 @@
+substance     , method     , mse_mean , mse_std , mae_mean, mae_std, rmse_mean, rmse_std, r2_mean, r2_std
+Thiamethoxam  , MT-SMARTNIR,  400.5255, 109.4280,   4.7711,  0.7244,   19.8178,   2.7895,   81.18,   4.93
+Permethrin    , MT-SMARTNIR, 2644.4421, 773.9695,  13.2092,  1.8338,   50.8050,   7.9558,   40.73,  15.07
+Azoxystrobin  , MT-SMARTNIR,  425.0565, 147.7511,   3.2275,  0.6152,   20.2598,   3.8207,   71.03,   9.77
+Difenoconazole, MT-SMARTNIR,  424.0650, 154.4515,   2.7445,  0.5368,   20.1047,   4.4573,   70.96,  10.41
+Cypermethrin  , MT-SMARTNIR,   60.5107,   6.6219,   2.9672,  0.1743,    7.7678,   0.4154,   34.20,   7.05
+Chlothianidin , MT-SMARTNIR,  381.1775, 102.8737,   4.6989,  0.5511,   19.3358,   2.7028,   44.53,  11.95

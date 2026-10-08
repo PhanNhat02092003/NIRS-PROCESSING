@@ -238,3 +238,67 @@ class RapeseedCSSEModel(nn.Module):
         c_content_pred = self.c_content_head(cls).squeeze(-1)  # (B,)
         regime_logits = self.regime_head(cls)
         return food_logits, n_content_pred, c_content_pred, regime_logits
+
+
+class MultiTaskSMARTNIRModel(nn.Module):
+    """Original 3-head MT-SMART-NIR design (ported verbatim from
+    MultiTaskSMARTNIR in ../MT-SMART-NIR/model_multitask.py), kept for the
+    Danang pesticide dataset: food classification + per-substance detection
+    (multi-label) + per-substance concentration regression, restricted to
+    an explicit substance subset (see dataset/pesticide_multitask_dataset.py)
+    rather than all 19. Unlike Mango/Grainit/Rapeseed, the detection head is
+    kept here -- pesticide presence/absence is a real concept on this
+    dataset (Stage 1), not something to strip out.
+
+    reg_head ends in Softplus (concentration is always >= 0) and is
+    soft-gated by the (detached) detection logits during training -- the
+    gradient for "how confident is this present" and "what's the
+    concentration" stay separate; predict() applies a hard threshold mask
+    instead of the soft gate for clean inference-time estimates.
+    """
+
+    def __init__(self, n_food_classes: int, n_pesticides: int, c_out: int = 64,
+                 n_layers: int = 6, n_heads: int = 6, h_hidden: int = 128, seq_len: int = 512,
+                 use_kan: bool = True, dropout: float = 0.1):
+        super().__init__()
+        self.n_pesticides = n_pesticides
+        self.encoder = CrossScaleSpectralEncoder(c_out, n_layers, n_heads, h_hidden, seq_len, dropout)
+        D = self.encoder.d_model
+
+        if use_kan:
+            self.food_head = nn.Sequential(nn.LayerNorm(D), KAN([D, 32, 16, n_food_classes]))
+        else:
+            self.food_head = nn.Sequential(
+                nn.Linear(D, 32), nn.GELU(), nn.Linear(32, 16), nn.GELU(), nn.Linear(16, n_food_classes)
+            )
+        self.det_head = nn.Linear(D, n_pesticides)
+        self.reg_head = nn.Sequential(nn.Linear(D, n_pesticides), nn.Softplus())
+
+    def forward(self, x: torch.Tensor, return_raw_conc: bool = False):
+        cls = self.encoder(x)
+        food_logits = self.food_head(cls)
+        pest_logits = self.det_head(cls)
+        c_raw = self.reg_head(cls)
+        # Soft gate -- detach so the regression gradient can't corrupt det_head.
+        pest_conc = c_raw * torch.sigmoid(pest_logits.detach())
+        if return_raw_conc:
+            return food_logits, pest_logits, pest_conc, c_raw
+        return food_logits, pest_logits, pest_conc
+
+    def predict(self, x: torch.Tensor, detection_threshold: float = 0.5):
+        """Inference with a hard binary mask instead of the soft gate:
+        detected compounds get the full Softplus estimate, absent ones are
+        exactly 0."""
+        was_training = self.training
+        self.eval()
+        with torch.no_grad():
+            cls = self.encoder(x)
+            food_logits = self.food_head(cls)
+            pest_logits = self.det_head(cls)
+            c_raw = self.reg_head(cls)
+        food_pred = food_logits.argmax(-1)
+        pest_detected = torch.sigmoid(pest_logits) >= detection_threshold
+        pest_conc = c_raw * pest_detected.float()
+        if was_training:
+            self.train()
+        return food_pred, pest_detected, pest_conc
