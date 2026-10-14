@@ -9,16 +9,22 @@ import joblib
 from dataset.preprocessing import preprocess_spectra
 
 class ClassificationNIRSDataset(Dataset):
-    def __init__(self, data_filepath: str, bin_factor: int = 1):
+    def __init__(self, data_filepath: str, bin_factor: int = 1, group_col: str = None):
         super().__init__()
         df = pd.read_csv(data_filepath)
         X_raw = df[[wl for wl in df.columns if "w_" in wl]].values.astype(np.float32)
         y_raw = df['category'].values.ravel()
+        # optional group id (e.g. "_group_id" from downsample_training_data.py) for
+        # GroupKFold/StratifiedGroupKFold, kept aligned with y_raw through the same
+        # outlier-drop mask below.
+        group_raw = df[group_col].values.ravel() if group_col and group_col in df.columns else None
 
         X_raw, keep_mask = preprocess_spectra(X_raw)
         n_dropped = (~keep_mask).sum()
         if n_dropped:
             print(f"[ClassificationNIRSDataset] dropped {n_dropped} outlier spectra out of {len(keep_mask)}")
+        if group_raw is not None:
+            group_raw = group_raw[keep_mask]
         if bin_factor > 1:
             # Average-pool neighbouring wavelengths (high-resolution OCEANFX:
             # attention over 2136 points costs ~110 s/epoch). Trim to a multiple
@@ -28,6 +34,7 @@ class ClassificationNIRSDataset(Dataset):
             print(f"[ClassificationNIRSDataset] binned wavelengths by {bin_factor}: {n_out * bin_factor} -> {n_out} points")
         self.X_raw = X_raw
         self.y_raw = y_raw[keep_mask]
+        self.group_raw = group_raw
 
         self.mean = None
         self.std = None
