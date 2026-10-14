@@ -1,0 +1,35 @@
+{
+    "threshold": [
+        0.03165843904319748
+    ],
+    "val_acc": [
+        0.4385477079526496
+    ],
+    "val_precision": [
+        0.46621621621621623
+    ],
+    "val_recall": [
+        0.22647082957249529
+    ],
+    "val_f1": [
+        0.3048544761694372
+    ],
+    "val_pr_auc": [
+        0.018485917779759074
+    ],
+    "brier_before_calibration": [
+        0.06404631619481505
+    ],
+    "brier_after_calibration": [
+        0.03224930263625218
+    ],
+    "brier_after_shrinkage": [
+        0.032998658057941624
+    ],
+    "val_pos_recall": [
+        0.0
+    ],
+    "val_pos_precision": [
+        0.0
+    ]
+}
