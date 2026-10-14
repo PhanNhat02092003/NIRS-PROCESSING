@@ -193,8 +193,10 @@ def _threshold_confidence(prob: np.ndarray, thr: float, temperature: float = 1.0
 
 
 def infer_substances_detection(spectra: np.ndarray, machine: str, categories: List[str]):
-    """Buoc 1 -- presence/absence, SMART-NIR + food one-hot
-    (checkpoint/substance_regression/stage1_smartnir_os2), 5-fold ensemble."""
+    """Buoc 1 -- presence/absence, SMART-NIR + food one-hot, group-safe
+    retrain + Recall>=0.99 threshold
+    (checkpoint/substance_regression/stage1_smartnir_downsampled), 5-fold
+    ensemble."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     spectra = _preprocess(spectra, machine)
     Ft = torch.tensor(_food_onehot(categories), device=device)
@@ -202,8 +204,8 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
     results = [[] for _ in range(len(spectra))]
     confidences = [{} for _ in range(len(spectra))]
     for substance in SUBSTANCES:
-        data_dir = f"data/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
-        ckpt_dir = f"checkpoint/substance_regression/stage1_smartnir_os2/{machine}/{substance}"
+        data_dir = f"data/substance_regression/stage1_smartnir_downsampled/{machine}/{substance}"
+        ckpt_dir = f"checkpoint/substance_regression/stage1_smartnir_downsampled/{machine}/{substance}"
         avg_prob, avg_thr = _smartnir_ensemble(spectra, Ft, data_dir, ckpt_dir, substance, device)
         if avg_prob is None:
             continue
@@ -218,7 +220,9 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
 def infer_substances_severity(spectra: np.ndarray, machine: str, categories: List[str],
                                detected_list: List[List[str]]):
     """Buoc 2 -- An toan / Vuot nguong, SMART-NIR + food one-hot + per-food
-    prior shrinkage (checkpoint/substance_severity_smartnir), 5-fold ensemble."""
+    prior shrinkage, group-safe retrain + Recall>=0.99 threshold
+    (checkpoint/substance_severity_smartnir/stage2_smartnir_downsampled),
+    5-fold ensemble."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     spectra = _preprocess(spectra, machine)
     Ft = torch.tensor(_food_onehot(categories), device=device)
@@ -228,8 +232,8 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
     confidences = [{} for _ in detected_list]
     substances_needed = sorted({s for detected in detected_list for s in detected})
     for substance in substances_needed:
-        data_dir = f"data/substance_severity_smartnir/{machine}/{substance}"
-        ckpt_dir = f"checkpoint/substance_severity_smartnir/{machine}/{substance}"
+        data_dir = f"data/substance_severity_smartnir/stage2_smartnir_downsampled/{machine}/{substance}"
+        ckpt_dir = f"checkpoint/substance_severity_smartnir/stage2_smartnir_downsampled/{machine}/{substance}"
         avg_prob, avg_thr = _smartnir_ensemble(spectra, Ft, data_dir, ckpt_dir, substance, device, food_idx=food_idx)
         if avg_prob is None:
             continue
@@ -244,6 +248,16 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
 
 def _coded(code: str, conf: float) -> dict:
     return {"code": code, "conf-score": round(conf, 4)}
+
+
+# Xà Lách / Cải Bẹ Xanh / Cải Thìa / Mồng Tơi are near-spectrally-identical
+# leafy greens (see analyze_leafy_spectra.py) -- GuidedDCNet's confusion
+# between them is high enough that the raw guess is unreliable to report.
+# The REPORTED `category` is forced to Cải Thìa for any of the four;
+# Stage 1/2 (food one-hot, MRL lookup) still condition on the model's own
+# raw predicted category, unaffected by this display-only override.
+LEAFY_GREENS = {"Xà Lách", "Cải Bẹ Xanh", "Cải Thìa", "Mồng Tơi"}
+LEAFY_DISPLAY_OVERRIDE = "Cải Thìa"
 
 
 def analyze_spectrum(spectra: np.ndarray, machine: str):
@@ -275,8 +289,9 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     results = []
     for i, (category, detected, severity) in enumerate(zip(categories, detected_list, severity_list)):
         over_threshold = [s for s, verdict in severity.items() if verdict == "Vượt ngưỡng"]
+        display_category = LEAFY_DISPLAY_OVERRIDE if category in LEAFY_GREENS else category
         results.append({
-            "category": _coded(FOOD_NAME_TO_ID[category], cat_conf[i]),
+            "category": _coded(FOOD_NAME_TO_ID[display_category], cat_conf[i]),
             "substances_detected": [_coded(SUBSTANCE_NAME_TO_ID[s], detect_conf[i][s]) for s in detected],
             "safe": len(over_threshold) == 0,
             "substances_over_threshold": [_coded(SUBSTANCE_NAME_TO_ID[s], severity_conf[i][s]) for s in over_threshold],
