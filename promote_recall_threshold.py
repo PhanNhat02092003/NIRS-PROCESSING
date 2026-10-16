@@ -17,12 +17,19 @@ still ticks up slightly at 0.999, but not enough to justify going past 0.99
 as the shared default). See conversation history for the full ablation
 tables.
 
-The original threshold.json content (Recall>=0.9) is preserved as
-{substance}_fold_{fold}_threshold_recall0.9.json before being
-overwritten, so nothing is lost.
+The previous official threshold.json content is preserved as
+{substance}_fold_{fold}_threshold_recall{BACKUP_LABEL}.json before being
+overwritten (BACKUP_LABEL names whatever policy is CURRENTLY live, e.g.
+0.99 for the Recall>=0.99 policy promoted earlier), so nothing is lost and
+promoting again later (e.g. back to a stricter policy) is a simple rerun
+with swapped SRC_RECALL/BACKUP_LABEL.
 
 Usage: STAGE=stage1 python3 promote_recall_threshold.py
-       STAGE=stage2 python3 promote_recall_threshold.py
+       STAGE=stage2 MACHINES=OCEANFX SRC_RECALL=0.46 BACKUP_LABEL=0.99 python3 promote_recall_threshold.py
+Env: STAGE (stage1|stage2), MACHINES (comma list, default FLAMENIR,OCEANFX),
+     SRC_RECALL (the target_recall suffix to promote FROM, default 0.99),
+     BACKUP_LABEL (suffix to save the CURRENT threshold.json under before
+     overwriting, default 0.9 -- matches this script's original behavior).
 """
 
 import json
@@ -35,23 +42,25 @@ STAGE_CONFIGS = {
     "stage1": dict(task_dir="substance_regression", tag="stage1_smartnir_downsampled"),
     "stage2": dict(task_dir="substance_severity_smartnir", tag="stage2_smartnir_downsampled"),
 }
-SRC_SUFFIX = "threshold_recall0.99"
 
 
 def main():
     stage = os.environ.get("STAGE", "stage1")
     cfg = STAGE_CONFIGS[stage]
     task_dir, tag = cfg["task_dir"], cfg["tag"]
-    for machine in ("FLAMENIR", "OCEANFX"):
+    machines = os.environ.get("MACHINES", "FLAMENIR,OCEANFX").split(",")
+    src_suffix = f"threshold_recall{os.environ.get('SRC_RECALL', '0.99')}"
+    backup_label = os.environ.get("BACKUP_LABEL", "0.9")
+    for machine in machines:
         n_promoted = 0
         for s in ALL_SUBSTANCES:
             data_dir = f"data/{task_dir}/{tag}/{machine}/{s}"
             if not os.path.isdir(data_dir):
                 continue
             for fold in range(1, 6):
-                src = f"{data_dir}/{s}_fold_{fold}_{SRC_SUFFIX}.json"
+                src = f"{data_dir}/{s}_fold_{fold}_{src_suffix}.json"
                 dst = f"{data_dir}/{s}_fold_{fold}_threshold.json"
-                backup = f"{data_dir}/{s}_fold_{fold}_threshold_recall0.9.json"
+                backup = f"{data_dir}/{s}_fold_{fold}_threshold_recall{backup_label}.json"
                 if not os.path.exists(src):
                     continue
                 if os.path.exists(dst) and not os.path.exists(backup):
@@ -61,7 +70,7 @@ def main():
                 with open(dst, "w") as f:
                     json.dump(new_thr, f, indent=4)
                 n_promoted += 1
-        print(f"{machine}: promoted {n_promoted} threshold files (recall0.99 -> threshold)", flush=True)
+        print(f"{machine}: promoted {n_promoted} threshold files ({src_suffix} -> threshold)", flush=True)
 
 
 if __name__ == "__main__":
