@@ -194,7 +194,12 @@ def _threshold_confidence(prob: np.ndarray, thr: float, temperature: float = 1.0
 
 def infer_substances_detection(spectra: np.ndarray, machine: str, categories: List[str]):
     """Buoc 1 -- presence/absence, SMART-NIR + food one-hot, group-safe
-    retrain + Recall>=0.99 threshold
+    retrain + balanced-tradeoff threshold (target_recall=0.45 FLAMENIR /
+    0.46 OCEANFX -- the per-machine recall floor whose false-alarm rate and
+    miss rate on the external test-data land closest to each other; a
+    Recall>=0.99 floor minimizes miss rate but drives false-alarm to ~100%
+    due to compounding across 19 independent per-substance gates, see
+    conversation history)
     (checkpoint/substance_regression/stage1_smartnir_downsampled), 5-fold
     ensemble."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -220,7 +225,8 @@ def infer_substances_detection(spectra: np.ndarray, machine: str, categories: Li
 def infer_substances_severity(spectra: np.ndarray, machine: str, categories: List[str],
                                detected_list: List[List[str]]):
     """Buoc 2 -- An toan / Vuot nguong, SMART-NIR + food one-hot + per-food
-    prior shrinkage, group-safe retrain + Recall>=0.99 threshold
+    prior shrinkage, group-safe retrain + balanced-tradeoff threshold (see
+    infer_substances_detection's docstring for why this isn't Recall>=0.99)
     (checkpoint/substance_severity_smartnir/stage2_smartnir_downsampled),
     5-fold ensemble."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

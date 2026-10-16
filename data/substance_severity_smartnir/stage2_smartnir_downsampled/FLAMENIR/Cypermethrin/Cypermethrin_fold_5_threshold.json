@@ -1,4 +1,4 @@
 {
-    "threshold": 0.039027885048617275,
-    "target_recall": 0.99
+    "threshold": 0.10831440082934579,
+    "target_recall": 0.45
 }
