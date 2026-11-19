@@ -257,7 +257,9 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
 
 
 def _coded(code: str, conf: float) -> dict:
-    return {"code": code, "conf-score": round(conf, 4)}
+    # float(): _resolve_leafy_subtype's predict_proba().max() confidences
+    # are numpy.float64, which json/JSONResponse can't serialize directly.
+    return {"code": code, "conf-score": round(float(conf), 4)}
 
 
 # Xà Lách / Cải Bẹ Xanh / Cải Thìa / Mồng Tơi are near-spectrally-identical
