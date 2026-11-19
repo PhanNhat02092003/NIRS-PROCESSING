@@ -54,6 +54,26 @@ def snv(X: np.ndarray) -> np.ndarray:
     return (X - mean) / std
 
 
+def preprocess_spectra_derivative(X: np.ndarray, window_length: int = 11, polyorder: int = 2):
+    """Outlier filter -> SNV -> Savitzky-Golay 1st derivative.
+
+    Used for the leafy-green sub-classifier in food_classification_hierarchical.py:
+    the 4 leafy categories (Xa Lach/Cai Be Xanh/Cai Thia/Mong Toi) have
+    heavily overlapping pigment absorption bands on plain SNV absorbance,
+    where only the overall curve *level* is normalized. The first derivative
+    instead emphasizes the local *shape* (slope) of the curve, which is
+    where the chemometrics literature says this kind of same-family
+    confusion is actually resolvable; SNV first still removes the
+    multiplicative scatter effect that would otherwise dominate the
+    derivative too.
+    """
+    keep_mask = remove_spectral_outliers(X)
+    X = X[keep_mask]
+    X = snv(X)
+    X = savgol_filter(X, window_length=window_length, polyorder=polyorder, deriv=1, axis=1)
+    return X.astype(np.float32), keep_mask
+
+
 def preprocess_spectra(X: np.ndarray, apply_savgol_snv: bool = True):
     """Full per-sample pipeline: outlier filter -> SG smoothing -> SNV.
     Returns (X_processed, keep_mask) where keep_mask marks which input rows

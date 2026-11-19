@@ -87,8 +87,12 @@ def _food_onehot(categories: List[str]) -> np.ndarray:
 
 def infer_category_classification(spectra: np.ndarray, machine: str):
     """GuidedDCNet, 5-fold ensemble by majority vote
-    (checkpoint/category_classification_guideddcnet)."""
-    task = "category_classification_guideddcnet"
+    (checkpoint/category_classification_6way_guideddcnet). 6-way, not the
+    original 9: the 4 spectrally-similar leafy greens (Xà Lách/Cải Bẹ
+    Xanh/Cải Thìa/Mồng Tơi) are merged into one LEAFY_MERGED_LABEL class
+    here -- see _resolve_leafy_subtype() for how analyze_spectrum() turns
+    that back into a specific one of the 4."""
+    task = "category_classification_6way_guideddcnet"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     stats_path = f"data/{task}/{machine}/fold_1/stats.npz"
@@ -257,13 +261,42 @@ def _coded(code: str, conf: float) -> dict:
 
 
 # Xà Lách / Cải Bẹ Xanh / Cải Thìa / Mồng Tơi are near-spectrally-identical
-# leafy greens (see analyze_leafy_spectra.py) -- GuidedDCNet's confusion
-# between them is high enough that the raw guess is unreliable to report.
-# The REPORTED `category` is forced to Cải Thìa for any of the four;
-# Stage 1/2 (food one-hot, MRL lookup) still condition on the model's own
-# raw predicted category, unaffected by this display-only override.
-LEAFY_GREENS = {"Xà Lách", "Cải Bẹ Xanh", "Cải Thìa", "Mồng Tơi"}
-LEAFY_DISPLAY_OVERRIDE = "Cải Thìa"
+# leafy greens, too similar for the main 9-class classifier to tell apart
+# reliably (see analyze_leafy_positions.py) -- the production classifier
+# (build_6class_labels.py / food_classification_6class.py) merges them
+# into one LEAFY_MERGED_LABEL class instead of guessing among the 4.
+# _resolve_leafy_subtype() then runs a separate PCA+LDA model
+# (train_leafy_pca_lda.py, checkpoint/leafy_pca_lda/{machine}/model.joblib)
+# trained specifically on these 4 categories (data-new, scanned at the "Lá
+# 2" / inner-leaf-face position -- ~97% CV accuracy on OCEANFX, ~85% on
+# FLAMENIR) to get the real category. This REQUIRES leafy-green samples to
+# be scanned at that position in production; a different position was not
+# validated and may be far less accurate (see analyze_leafy_positions.py's
+# La1/Cuong numbers).
+LEAFY_MERGED_LABEL = "Rau Lá"
+_LEAFY_PCA_LDA_CACHE = {}
+
+
+def _load_leafy_pca_lda(machine: str):
+    if machine not in _LEAFY_PCA_LDA_CACHE:
+        path = f"checkpoint/leafy_pca_lda/{machine}/model.joblib"
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Leafy PCA+LDA model not found for {machine}: {path}")
+        _LEAFY_PCA_LDA_CACHE[machine] = joblib.load(path)
+    return _LEAFY_PCA_LDA_CACHE[machine]
+
+
+def _resolve_leafy_subtype(spectra: np.ndarray, machine: str):
+    """Resolves which of the 4 leafy-green categories each row of `spectra`
+    actually is, via the PCA+LDA model. `spectra` must be the ORIGINAL,
+    unbinned request spectra (full wavelength resolution -- the PCA+LDA
+    model was trained on data-new's full-resolution spectra, not
+    GuidedDCNet's BIN=8-reduced OCEANFX input)."""
+    bundle = _load_leafy_pca_lda(machine)
+    X = snv(savgol_smooth(spectra)).astype(np.float32)
+    preds = bundle["pipeline"].predict(X)
+    confs = bundle["pipeline"].predict_proba(X).max(axis=1)
+    return list(preds), list(confs)
 
 
 def analyze_spectrum(spectra: np.ndarray, machine: str):
@@ -275,8 +308,12 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     substance outside `substances_detected`.
 
     Every classification result is a `{"code": ..., "conf-score": ...}`
-    object: `category` reports F01..F09 (FOOD_NAME_TO_ID), confidence = the
-    fraction of the 5 GuidedDCNet folds that agreed on it. Substances in
+    object: `category` reports F01..F09 (FOOD_NAME_TO_ID) -- for the 5
+    non-leafy categories, confidence is the fraction of the 5 GuidedDCNet
+    folds that agreed on the 6-way prediction; for a sample resolved
+    through the leafy PCA+LDA model (see _resolve_leafy_subtype()),
+    confidence is that model's own predict_proba instead, since it's the
+    model that actually decided which of the 4 it is. Substances in
     `substances_detected`/`substances_over_threshold` report P01..P19
     (SUBSTANCE_NAME_TO_ID); confidence there is `_threshold_confidence`'s
     logit-shifted score (0.5 at that substance's own decision threshold,
@@ -289,15 +326,26 @@ def analyze_spectrum(spectra: np.ndarray, machine: str):
     model prediction.
     """
     categories, cat_conf = infer_category_classification(spectra, machine)
+
+    # Resolve the merged leafy-green class into a specific one of the 4
+    # BEFORE Bước 1/2, since they need a real food category (one-hot over
+    # the original 9, via FOOD_NAME_TO_INDEX) -- LEAFY_MERGED_LABEL isn't
+    # one of those 9 and would silently get an all-zero one-hot otherwise.
+    leafy_idx = [i for i, c in enumerate(categories) if c == LEAFY_MERGED_LABEL]
+    if leafy_idx:
+        leafy_subtypes, leafy_confs = _resolve_leafy_subtype(spectra[leafy_idx], machine)
+        for j, i in enumerate(leafy_idx):
+            categories[i] = leafy_subtypes[j]
+            cat_conf[i] = leafy_confs[j]
+
     detected_list, detect_conf = infer_substances_detection(spectra, machine, categories)
     severity_list, severity_conf = infer_substances_severity(spectra, machine, categories, detected_list)
 
     results = []
     for i, (category, detected, severity) in enumerate(zip(categories, detected_list, severity_list)):
         over_threshold = [s for s, verdict in severity.items() if verdict == "Vượt ngưỡng"]
-        display_category = LEAFY_DISPLAY_OVERRIDE if category in LEAFY_GREENS else category
         results.append({
-            "category": _coded(FOOD_NAME_TO_ID[display_category], cat_conf[i]),
+            "category": _coded(FOOD_NAME_TO_ID[category], cat_conf[i]),
             "substances_detected": [_coded(SUBSTANCE_NAME_TO_ID[s], detect_conf[i][s]) for s in detected],
             "safe": len(over_threshold) == 0,
             "substances_over_threshold": [_coded(SUBSTANCE_NAME_TO_ID[s], severity_conf[i][s]) for s in over_threshold],

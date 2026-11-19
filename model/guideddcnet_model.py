@@ -1,5 +1,5 @@
 """GuidedDCNet: a diffusion-integrated classification baseline, reimplemented
-from the paper (baseline-information/classification/GuidedDCNet/cas-sc-template.tex)
+from the paper (additional/baseline-information/classification/GuidedDCNet/cas-sc-template.tex)
 since the authors' own reference repo has no code published yet.
 
 Two deliberate deviations from the paper, agreed on before implementing:
