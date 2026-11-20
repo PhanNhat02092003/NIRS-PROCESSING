@@ -64,7 +64,7 @@ def main():
     machine = os.environ["MACHINE"]
     bin_factor = int(os.environ.get("BIN", 1))
 
-    full_path = f"{_HERE}/data/{machine}/ALL.csv"
+    full_path = f"{_HERE}/data/{machine}/ALL_synthetic.csv"
     if not os.path.exists(full_path):
         raise FileNotFoundError(f"{full_path} not found -- run prepare_danangleafy6_dataset.py first")
     df = pd.read_csv(full_path)

@@ -5,6 +5,16 @@ per-fold test predictions at ../../../LensNIR/results/main/{Dataset}/
 fold{1..5}_test_pred.npz -- READ ONLY, nothing in ../../../LensNIR is
 touched or retrained.
 
+Also supports DanangLeafy6_FLAMENIR/DanangLeafy6_OCEANFX, whose "main"
+checkpoints were trained via this repo's own additional/LensNIR/train.py
+(not the separate paper-code LensNIR checkout) -- predictions read from
+./results/main/{dataset}/ instead, and the row goes to
+additional/DanangLeafy6/benchmark/{task}/{FLAMENIR,OCEANFX}.csv (one CSV
+per machine, not per dataset, matching that project's convention).
+
+Usage: python3 append_benchmark_results.py [dataset ...]  (default: Grainit Mango Rapeseed)
+       python3 append_benchmark_results.py DanangLeafy6_FLAMENIR DanangLeafy6_OCEANFX
+
 LensNIR's own paper/results/{Dataset}_summary.csv already reports food_acc/
 food_f1/r2/rmse/mae/qual_acc/qual_f1/qual_bacc for this exact "main" row,
 but not precision/recall (not part of that paper's tables); this script
@@ -13,8 +23,6 @@ raw food_true/food_pred (and the same for the derived quality decision) to
 match this repo's own benchmark CSV schema exactly, and recomputes
 mse/mae/rmse/r2 per regression target the same way -- cross-checked against
 the paper's own numbers below before appending.
-
-Usage: DATA_ROOT=/home/phannhat/all-dataset python3 append_benchmark_results.py
 """
 import os
 import sys
@@ -30,14 +38,33 @@ from benchmark_utils import append_classification_row, append_regression_row
 from dataset_benchmark import DATASETS, derive_quality, load_benchmark
 
 LENSNIR_RESULTS = "/home/phannhat/LensNIR/results/main"
+# DanangLeafy6_{machine}'s "main" checkpoints were trained via this repo's
+# own additional/LensNIR/train.py (not the separate paper-code LensNIR
+# checkout Grainit/Mango/Rapeseed use), so their fold predictions live here.
+LOCAL_RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results/main")
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # NIRS-PROCESSING/
 N_FOLDS = 5
 
 
+def results_dir_for(dataset: str) -> str:
+    return LOCAL_RESULTS if dataset.startswith("DanangLeafy6_") else LENSNIR_RESULTS
+
+
+def csv_group_for(dataset: str) -> tuple:
+    """(folder under additional/, csv basename) for additional/{folder}/benchmark/*/{basename}.csv.
+
+    Grainit/Mango/Rapeseed have one CSV per dataset. DanangLeafy6 splits by
+    machine (FLAMENIR/OCEANFX) instead -- see additional/DanangLeafy6/benchmark/."""
+    if dataset.startswith("DanangLeafy6_"):
+        return "DanangLeafy6", dataset[len("DanangLeafy6_"):]
+    return dataset, dataset
+
+
 def load_fold_preds(dataset: str):
     preds = []
+    results_root = results_dir_for(dataset)
     for fold in range(1, N_FOLDS + 1):
-        path = f"{LENSNIR_RESULTS}/{dataset}/fold{fold}_test_pred.npz"
+        path = f"{results_root}/{dataset}/fold{fold}_test_pred.npz"
         with np.load(path) as z:
             preds.append({k: z[k] for k in z.files})
     return preds
@@ -74,6 +101,7 @@ def run(dataset: str):
     target_names = d["target_names"]
     spec = DATASETS[dataset]
     preds = load_fold_preds(dataset)
+    folder, csv_name = csv_group_for(dataset)
 
     # --- classification ---
     clf_folds = [clf_metrics(p["food_true"], p["food_pred"]) for p in preds]
@@ -82,7 +110,7 @@ def run(dataset: str):
     rec_m, rec_s = mean_std(clf_folds, "recall")
     f1_m, f1_s = mean_std(clf_folds, "f1")
     print(f"  classification: acc={acc_m:.2f}+-{acc_s:.2f} prec={prec_m:.2f} rec={rec_m:.2f} f1={f1_m:.2f}")
-    csv_path = f"{REPO_ROOT}/additional/{dataset}/benchmark/classification/{dataset}.csv"
+    csv_path = f"{REPO_ROOT}/additional/{folder}/benchmark/classification/{csv_name}.csv"
     append_classification_row(csv_path, "LensNIR", acc_m, acc_s, prec_m, prec_s, rec_m, rec_s, f1_m, f1_s)
 
     # --- regression, per target ---
@@ -93,7 +121,7 @@ def run(dataset: str):
         rmse_m, rmse_s = mean_std(reg_folds, "rmse")
         r2_m, r2_s = mean_std(reg_folds, "r2")
         print(f"  regression[{target}]: r2={r2_m:.2f}+-{r2_s:.2f} rmse={rmse_m:.4f} mae={mae_m:.4f}")
-        csv_path = f"{REPO_ROOT}/additional/{dataset}/benchmark/regression/{dataset}.csv"
+        csv_path = f"{REPO_ROOT}/additional/{folder}/benchmark/regression/{csv_name}.csv"
         append_regression_row(csv_path, target, "LensNIR", mse_m, mse_s, mae_m, mae_s, rmse_m, rmse_s, r2_m, r2_s)
 
     # --- quality ---
@@ -111,10 +139,11 @@ def run(dataset: str):
     qrec_m, qrec_s = mean_std(qual_folds, "recall")
     qf1_m, qf1_s = mean_std(qual_folds, "f1")
     print(f"  quality: acc={qacc_m:.2f}+-{qacc_s:.2f} prec={qprec_m:.2f} rec={qrec_m:.2f} f1={qf1_m:.2f}")
-    csv_path = f"{REPO_ROOT}/additional/{dataset}/benchmark/quality/{dataset}.csv"
+    csv_path = f"{REPO_ROOT}/additional/{folder}/benchmark/quality/{csv_name}.csv"
     append_classification_row(csv_path, "LensNIR", qacc_m, qacc_s, qprec_m, qprec_s, qrec_m, qrec_s, qf1_m, qf1_s)
 
 
 if __name__ == "__main__":
-    for ds in ["Grainit", "Mango", "Rapeseed"]:
+    datasets = sys.argv[1:] or ["Grainit", "Mango", "Rapeseed"]
+    for ds in datasets:
         run(ds)

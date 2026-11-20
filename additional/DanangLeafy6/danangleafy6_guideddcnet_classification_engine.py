@@ -28,7 +28,7 @@ TASK = "category_classification_guideddcnet"
 
 if __name__ == "__main__":
     machine = os.environ["MACHINE"]
-    full_path = f"{_HERE}/data/{machine}/ALL.csv"
+    full_path = f"{_HERE}/data/{machine}/ALL_synthetic.csv"
     if not os.path.exists(full_path):
         raise FileNotFoundError(f"{full_path} not found -- run prepare_danangleafy6_dataset.py first")
     run_guideddcnet(full_path, TASK, machine, group_col="_group_id")

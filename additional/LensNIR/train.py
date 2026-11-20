@@ -54,7 +54,7 @@ from sklearn.utils import resample
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
-from dataset_benchmark import (DATASET_NAMES, DEFAULT_DATA_ROOT, derive_quality,
+from dataset_benchmark import (DATASET_NAMES, DATASETS, DEFAULT_DATA_ROOT, derive_quality,
                                load_benchmark)
 from models import (DEFAULT_KERNELS, LensNIR, FlatSMARTNIRMultiTask,
                               SpectraformerMultiTask, ResNet1DMultiTask,
@@ -162,12 +162,25 @@ def metrics_from_predictions(food_true, food_pred, Y_true, Y_pred, info: Dict,
     for j, t in enumerate(target_names):
         obs = ~np.isnan(Y_true[:, j])
         yt, yp = Y_true[obs, j], Y_pred[obs, j]
+        if len(yt) == 0:
+            # Some substances are present in only a small fraction of rows
+            # (e.g. DanangLeafy6's Cypermethrin: ~6% of samples); a small
+            # inner fit/val split can by chance contain zero of them.
+            m[f"r2_{t}"] = m[f"rmse_{t}"] = m[f"mae_{t}"] = m[f"rpd_{t}"] = float("nan")
+            continue
         rmse = float(np.sqrt(mean_squared_error(yt, yp)))
         m[f"r2_{t}"]   = float(r2_score(yt, yp)) if len(yt) > 1 else float("nan")
         m[f"rmse_{t}"] = rmse
         m[f"mae_{t}"]  = float(mean_absolute_error(yt, yp))
         m[f"rpd_{t}"]  = float(yt.std(ddof=1) / rmse) if rmse > 0 else float("nan")
     m["reg_r2"] = float(np.nanmean([m[f"r2_{t}"] for t in target_names]))
+    # Clipped at -1 ("no better than predicting the mean") so one
+    # catastrophically-negative target (heavy-tailed concentrations, e.g.
+    # DanangLeafy6) can't swamp _composite()'s unbounded sum and make
+    # checkpoint selection ignore food_acc/qual_acc entirely. No-op for
+    # datasets whose R² never goes below -1 (Grainit/Mango/Rapeseed).
+    m["reg_r2_clipped"] = float(np.nanmean([max(m[f"r2_{t}"], -1.0) for t in target_names
+                                             if not math.isnan(m[f"r2_{t}"])]) if target_names else float("nan"))
 
     if aux_pred is not None and len(aux_pred):
         q_true, q_pred = np.asarray(aux_true), np.asarray(aux_pred)
@@ -188,8 +201,13 @@ def metrics_from_predictions(food_true, food_pred, Y_true, Y_pred, info: Dict,
 
 
 @torch.no_grad()
-def predict_loader(model, loader, device, use_amp=False):
-    """Predictions in original units: (food_true, food_pred, Y_true, Y_pred, aux_true, aux_pred)."""
+def predict_loader(model, loader, device, use_amp=False, log_targets=False):
+    """Predictions in original units: (food_true, food_pred, Y_true, Y_pred, aux_true, aux_pred).
+
+    log_targets=True means the model was fit on log1p(y)-then-z-scored
+    targets (see train_fold) — model.denormalize() only undoes the
+    z-score, so expm1 here is what brings reg_pred back to the same
+    original units as reg_true (which is never transformed)."""
     model.eval()
     food_true, food_pred, reg_true, reg_pred = [], [], [], []
     aux_true, aux_pred = [], []
@@ -204,9 +222,15 @@ def predict_loader(model, loader, device, use_amp=False):
             tqdm.write("  [WARN] evaluate: non-finite values in model output — sanitizing for metrics")
             fl = torch.nan_to_num(fl, nan=0.0, posinf=0.0, neginf=0.0)
             rz = torch.nan_to_num(rz, nan=0.0, posinf=0.0, neginf=0.0)
+        reg_orig = model.denormalize(rz)
+        if log_targets:
+            # expm1 can overflow to inf for a wildly wrong early-training
+            # prediction (z-score space is unbounded); clamp before expm1
+            # so this stays a large-but-finite outlier instead of inf/nan.
+            reg_orig = torch.expm1(reg_orig.clamp(max=20.0))
         food_pred.append(fl.argmax(1).cpu().numpy())
         food_true.append(food_b.numpy())
-        reg_pred.append(model.denormalize(rz).cpu().numpy())
+        reg_pred.append(reg_orig.cpu().numpy())
         reg_true.append(reg_b.numpy())
         if al is not None:
             aux_pred.append(al.argmax(1).cpu().numpy())
@@ -217,7 +241,8 @@ def predict_loader(model, loader, device, use_amp=False):
 
 
 def evaluate_fold(model, loader, device, info: Dict, use_amp: bool = False) -> Dict:
-    ft, fp, yt, yp, at, ap = predict_loader(model, loader, device, use_amp)
+    ft, fp, yt, yp, at, ap = predict_loader(model, loader, device, use_amp,
+                                            log_targets=info.get("log_targets", False))
     return metrics_from_predictions(ft, fp, yt, yp, info, at, ap)
 
 
@@ -239,7 +264,7 @@ def metric_keys(info: Dict) -> List[str]:
 def _composite(m: Dict, st_task: str, use_aux: bool) -> float:
     """Checkpoint-selection score. Derived quality (Grainit/Mango) is a
     function of food + reg, so it is not added; a learned quality head is."""
-    r2 = m["reg_r2"] if not math.isnan(m["reg_r2"]) else -1.0
+    r2 = m["reg_r2_clipped"] if not math.isnan(m.get("reg_r2_clipped", float("nan"))) else -1.0
     if st_task == "food":
         return m["food_acc"] / 100.0
     if st_task == "reg":
@@ -268,6 +293,17 @@ def train_fold(train, val, test, args, device, fold, info) -> Dict:
     selected scales ("n_active", "macs_M").
     """
     X_tr, y_food_tr, y_reg_tr, y_aux_tr = train
+
+    log_targets = info.get("log_targets", False)
+    if log_targets:
+        # Heavy-tailed concentrations (DanangLeafy6: CV~3-4, outliers
+        # 100-900x the median) would otherwise leave huge-magnitude
+        # z-scored outliers that the Huber loss keeps linearly penalising
+        # every epoch, destabilising the shared backbone -- same reason
+        # every other regression engine in this repo log1p's first. Val/
+        # test targets stay untouched (original units); predict_loader
+        # undoes this with expm1 so Y_true/Y_pred compare in the same units.
+        y_reg_tr = np.log1p(y_reg_tr)
 
     # Target z-score statistics from the (unbalanced) fitting split only.
     reg_mean = np.nanmean(y_reg_tr, axis=0)
@@ -561,7 +597,7 @@ def train_fold(train, val, test, args, device, fold, info) -> Dict:
     if best_state:
         model.load_state_dict({k_: v.to(device) for k_, v in best_state.items()})
 
-    preds = predict_loader(model, te_loader, device, use_amp)
+    preds = predict_loader(model, te_loader, device, use_amp, log_targets=info.get("log_targets", False))
     m_final = metrics_from_predictions(*preds[:4], info, preds[4], preds[5])
     if args.save_dir:
         Path(args.save_dir).mkdir(parents=True, exist_ok=True)
@@ -692,6 +728,7 @@ def run(args, device):
     for name in args.dataset:
         torch.cuda.empty_cache()
         d = load_benchmark(name, args.data_root)
+        d["log_targets"] = DATASETS[name].get("log_targets", False)
         X, y_food, y_reg, groups = d["X"], d["y_food"], d["y_reg"], d["groups"]
         y_aux = d["y_aux"] if d["y_aux"] is not None else np.zeros(len(X), dtype=np.int64)
         target_names = d["target_names"]

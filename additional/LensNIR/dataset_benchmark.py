@@ -82,24 +82,31 @@ DATASETS: dict = {
     # path (outside DATA_ROOT, which only holds the 3 datasets above), so
     # these 2 entries work regardless of DATA_ROOT's value. All 3 tasks:
     # classification (6-way), regression (6 of the 19 pesticide
-    # concentrations, picked for this benchmark; -1 = absent = MISSING_VALUE,
-    # no transform needed), quality (learned head, "safe_label" = An
-    # toan/Vuot nguong precomputed in prepare_danangleafy6_dataset.py from
-    # the *original* category + MRLs over just these 6 substances -- a
-    # quality_rules dict doesn't fit here, since it treats a missing/NaN
-    # target as undefined rather than trivially-safe-for-that-substance).
+    # concentrations, picked for this benchmark; -1 = absent = MISSING_VALUE),
+    # quality (learned head, "safe_label" = An toan/Vuot nguong precomputed
+    # in prepare_danangleafy6_dataset.py from the *original* category + MRLs
+    # over just these 6 substances -- a quality_rules dict doesn't fit here,
+    # since it treats a missing/NaN target as undefined rather than
+    # trivially-safe-for-that-substance).
+    # "log_targets": these concentrations are heavy-tailed (CV~3-4, max
+    # 100-900x the median -- additional/DanangLeafy6/figs/*/SUMMARY.csv),
+    # same reason additional/dataset/regression_dataset.py and every other
+    # DanangLeafy6 regression engine log1p's the target before z-scoring;
+    # train_fold() does the same here when this flag is set.
     "DanangLeafy6_FLAMENIR": {
-        "path":        "/home/phannhat/NIRS-PROCESSING/additional/DanangLeafy6/data/FLAMENIR/ALL.csv",
+        "path":        "/home/phannhat/NIRS-PROCESSING/additional/DanangLeafy6/data/FLAMENIR/ALL_synthetic.csv",
         "targets":     ['Thiamethoxam', 'Permethrin', 'Azoxystrobin',
                         'Difenoconazole', 'Cypermethrin', 'Chlothianidin'],
         "group_col":   "_group_id",
         "quality_col": "safe_label",
+        "log_targets": True,
     },
     "DanangLeafy6_OCEANFX": {
-        "path":        "/home/phannhat/NIRS-PROCESSING/additional/DanangLeafy6/data/OCEANFX/ALL.csv",
+        "path":        "/home/phannhat/NIRS-PROCESSING/additional/DanangLeafy6/data/OCEANFX/ALL_synthetic.csv",
         "targets":     ['Thiamethoxam', 'Permethrin', 'Azoxystrobin',
                         'Difenoconazole', 'Cypermethrin', 'Chlothianidin'],
         "group_col":   "_group_id",
+        "log_targets": True,
         "quality_col": "safe_label",
     },
 }

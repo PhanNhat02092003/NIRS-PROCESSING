@@ -1,6 +1,8 @@
-"""EDA for additional/DanangLeafy6/data/{machine}/ALL.csv (built by
-prepare_danangleafy6_dataset.py): per machine, produces the figures below
-into additional/DanangLeafy6/figs/{machine}/ and a text summary into
+"""EDA for additional/DanangLeafy6/data/{machine}/ALL_synthetic.csv (built
+by make_synthetic_substances.py from ALL.csv -- same category/spectra,
+synthetic concentrations + safe_label recomputed from them; see that
+script's docstring): per machine, produces the figures below into
+additional/DanangLeafy6/figs/{machine}/ and a text summary into
 additional/DanangLeafy6/figs/{machine}/SUMMARY.md.
 
   class_counts.png          sample count per class (bar chart)
@@ -181,9 +183,9 @@ def write_summary(df: pd.DataFrame, out_path: str, machine: str, name_to_fid, na
 
 
 def run(machine: str):
-    csv_path = f"{_HERE}/data/{machine}/ALL.csv"
+    csv_path = f"{_HERE}/data/{machine}/ALL_synthetic.csv"
     if not os.path.exists(csv_path):
-        print(f"SKIP {machine}: {csv_path} not found -- run prepare_danangleafy6_dataset.py first")
+        print(f"SKIP {machine}: {csv_path} not found -- run make_synthetic_substances.py first")
         return
     df = pd.read_csv(csv_path)
     out_dir = f"{FIG_DIR}/{machine}"
