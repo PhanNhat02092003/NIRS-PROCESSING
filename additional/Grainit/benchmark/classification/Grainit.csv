@@ -1,0 +1,4 @@
+method     , accuracy_mean, accuracy_std, precision_mean, precision_std, recall_mean, recall_std, f1_mean, f1_std
+SMART-NIR  ,         91.52,         6.16,          90.97,          4.03,       88.46,      12.96,   88.46,  10.64
+GuidedDCNet,         99.85,         0.29,          99.92,          0.16,       99.82,       0.36,   99.87,   0.26
+LensNIR    ,         99.41,         0.61,          99.21,          0.92,       98.96,       1.65,   99.05,   1.22

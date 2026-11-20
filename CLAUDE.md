@@ -15,6 +15,8 @@ This is a **Near-Infrared Spectroscopy (NIRS) machine learning pipeline** for pe
 # Install dependencies (requires CUDA 12.8 for GPU)
 pip install -r requirements.txt
 
+cd main   # all commands below run from main/, not the repo root
+
 # Food-category classification (5-fold CV); METHOD = smartnir | guideddcnet | xgboost | lightgbm
 MACHINE=FLAMENIR METHOD=smartnir python food_classification.py
 MACHINE=OCEANFX BIN=8 METHOD=smartnir python food_classification.py   # OCEANFX: average wavelengths in groups of 8
@@ -29,17 +31,19 @@ MACHINE=FLAMENIR METHOD=lightgbm python stage2_safety.py
 MACHINE=FLAMENIR METHOD=stage2 python regression.py
 ```
 
-Set `MACHINE` (`FLAMENIR` or `OCEANFX`) and `METHOD` in the environment (see the docstring at the top of each script for the other options); `.env` provides `DATASET_ROOT`. Ensure `../all-dataset/Danang-NIR/{machine}/ALL.csv` exists. A small smoke-test CSV per machine lives at `test/{machine}/sample.csv`. `get_results.ipynb` (root) is used for ad hoc inspection of saved history/checkpoints after training.
+Set `MACHINE` (`FLAMENIR` or `OCEANFX`) and `METHOD` in the environment (see the docstring at the top of each script for the other options); `main/.env` provides `DATASET_ROOT`. Ensure `../all-dataset/Danang-NIR/{machine}/ALL.csv` (relative to `main/`) exists. A small smoke-test CSV per machine lives at `main/test/{machine}/sample.csv`. `main/get_results.ipynb` is used for ad hoc inspection of saved history/checkpoints after training.
 
 ## Repository layout
 
-- Root: the Danang pesticide pipeline that the report is about -- `food_classification.py`, `stage1_detection.py`, `stage2_safety.py`, `regression.py` (each merges several methods, selected by `METHOD`), plus `make_holdout_test.py`, `dedup_conflicting_spectra.py`, `evaluate_holdout_stage1.py`, `compare_baselines.py`, `model/`, `dataset/`, `reports/`, `results/`.
-- `additional_experiments/{Grainit,Mango,Rapeseed,OSSL}/`: benchmarks on external NIR datasets (scripts, benchmark CSVs and their own checkpoint/history/data); see its README.
+The repo root holds only `.gitignore`, `CLAUDE.md`, `requirements.txt` and two subtrees -- everything runnable lives in one of them:
+
+- `main/`: the Danang pesticide pipeline that the report is about -- `food_classification.py`, `stage1_detection.py`, `stage2_safety.py`, `regression.py` (each merges several methods, selected by `METHOD`), plus `make_holdout_test.py`, `dedup_conflicting_spectra.py`, `evaluate_holdout_stage1.py`, `compare_baselines.py`, `model/`, `dataset/`, `reports/`, `results/`. Commands below assume `cwd=main/`.
+- `additional/{Grainit,Mango,Rapeseed}/`: benchmarks on external NIR datasets (scripts, benchmark CSVs and their own checkpoint/history/data); see its README. `additional/model/` and `additional/dataset/` hold the model/dataset modules used only by these benchmarks (EBAR, NirMACNet, XSpecMamba, PLS, ResNet1D, SpectraFormer baselines, per-dataset multitask/quality/regression Dataset classes); these scripts add both `../main/` and `../` (the `additional/` directory itself) to `sys.path`, so `model`/`dataset` resolve as namespace packages merging `main/model|dataset/` (shared: classification_model, guideddcnet_model, classification_dataset, preprocessing) with `additional/model|dataset/`.
 
 ## Architecture
 
 ### Data Flow
-- Input: CSV files at `../all-dataset/Danang-NIR/{machine}/ALL.csv`
+- Input: CSV files at `../all-dataset/Danang-NIR/{machine}/ALL.csv` (relative to `main/`)
   - Wavelength columns prefixed with `w_` (e.g., `w_1`, `w_2`, ...)
   - A `category` column for classification
   - One column per substance (value = concentration, `-1` means absent)
@@ -47,6 +51,35 @@ Set `MACHINE` (`FLAMENIR` or `OCEANFX`) and `METHOD` in the environment (see the
   - **Classification** (`task="category_classification"`): normalization stats + label encoder per fold in `data/{task}/{machine}/fold_{n}/`, checkpoints in `checkpoint/{task}/{machine}/checkpoint_fold{n}.pth`, history/plots in `history/{task}/{machine}/`
   - **Stage 1** (`task="substance_regression"`, XGBoost): per-substance, per-fold `StandardScaler` in `data/{task}/stage1/{machine}/{substance}/`, models in `checkpoint/{task}/stage1/{machine}/{substance}/{substance}_fold_{n}.json`, history/plots in `history/{task}/stage1/{machine}/{substance}/`
   - **Stage 2** (`task="substance_regression"`, deep learning): per-substance, per-fold normalization `.npz` in `data/{task}/stage2/{machine}/{substance}/fold_{n}/`, checkpoints/history/plots under the matching `checkpoint|history/{task}/stage2/{machine}/{substance}/`
+
+### Deployed category classification: 6-way + leafy-green disambiguator
+
+The 9 food categories include 4 spectrally-near-identical leafy greens (Xà
+Lách, Cải Bẹ Xanh, Cải Thìa, Mồng Tơi) that the main classifier cannot
+reliably tell apart. The deployed pipeline (`deploy_utils.py`) therefore
+splits this into two steps instead of one 9-way guess:
+1. `food_classification_6class.py` trains GuidedDCNet on
+   `build_6class_labels.py`'s `ALL_downsampled3_6class.csv` (CAP=25
+   downsampled, group-tagged data -- ~8,000 rows/machine -- with the 4
+   leafy greens merged into one `"Rau Lá"` label; `StratifiedGroupKFold`
+   on `_group_id`, same leakage-safe protocol as
+   `food_classification_hierarchical.py`; `GDC_BATCH_SIZE` overridden to
+   256, down from the 3072 default tuned for the full ALL.csv) --
+   `task="category_classification_6way_guideddcnet"`.
+2. Whenever that model predicts `"Rau Lá"`, `train_leafy_pca_lda.py`'s
+   PCA+LDA model (`checkpoint/leafy_pca_lda/{machine}/model.joblib`,
+   trained on `../all-dataset/Danang-NIR/leafy-position-scan/{machine}/` scanned at the **"Lá 2" / inner-leaf-face**
+   position, ~97% CV accuracy on OCEANFX / ~85% on FLAMENIR) resolves
+   which of the 4 it actually is. **This requires leafy-green samples to
+   be scanned at the "Lá 2" position in production** -- a different
+   position was not validated for this model and may be far less
+   accurate (see `reports/figs/leafy_positions/`).
+
+The original 9-class checkpoints (`task="category_classification_guideddcnet"`)
+are left untouched and still used by standalone baseline-comparison
+scripts (`compare_baselines.py`, `evaluate_deployed_pipeline_smartnir_food.py`,
+`food_classification_downsampled.py`) -- only the live pipeline
+(`deploy_utils.py`) switched to the 6-way + PCA+LDA design.
 
 ### Model Architecture (SMARTNIRClassifier / SMARTNIRRegressor)
 

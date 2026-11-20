@@ -1,0 +1,6 @@
+substance , method    , mse_mean, mse_std, mae_mean, mae_std, rmse_mean, rmse_std, r2_mean, r2_std
+dry_matter, SMART-NIR ,   0.1869,  0.0077,   0.2674,  0.0115,    0.4322,   0.0089,   96.99,   0.13
+dry_matter, EBAR      ,   1.1048,  0.0383,   0.8050,  0.0124,    1.0509,   0.0182,   82.19,   0.67
+dry_matter, NirMACNet ,   0.2906,  0.0039,   0.3992,  0.0030,    0.5391,   0.0036,   95.32,   0.09
+dry_matter, XSpecMamba,   0.3665,  0.0152,   0.4225,  0.0094,    0.6053,   0.0127,   94.09,   0.27
+dry_matter, LensNIR   ,   0.6074,  0.0193,   0.5827,  0.0090,    0.7793,   0.0124,   90.19,   0.54

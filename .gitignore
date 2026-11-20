@@ -4,21 +4,23 @@
 *.csv
 
 # ...except the hand-maintained method-comparison tables under each
-# additional_experiments/{Dataset}/benchmark/ and the root-level benchmark/
-# (main Danang-NIR pesticide-6 multitask results) -- these are report
-# results, not raw/derived data, and are small enough to track.
-!additional_experiments/*/benchmark/**/*.csv
-!benchmark/**/*.csv
+# additional/{Dataset}/benchmark/ and main/benchmark/ (main Danang-NIR
+# pesticide-6 multitask results) -- these are report results, not
+# raw/derived data, and are small enough to track.
+!additional/*/benchmark/**/*.csv
+!main/benchmark/**/*.csv
 
 __pycache__/
 *.py[cod]
 
-logs/
+main/logs/
 
 # Deprecated EBAR baseline checkpoints over GitHub's 100MB hard file-size
 # limit (Permethrin/Cypermethrin on both machines, Mango's dry_matter) --
 # not part of the report, kept locally only.
-checkpoint/substance_regression/stage2_ebar/FLAMENIR/Permethrin/
-checkpoint/substance_regression/stage2_ebar/OCEANFX/Permethrin/
-checkpoint/substance_regression/stage2_ebar/OCEANFX/Cypermethrin/
-additional_experiments/Mango/checkpoint/substance_regression/stage2_ebar/Mango/dry_matter/
+main/checkpoint/substance_regression/stage2_ebar/FLAMENIR/Permethrin/
+main/checkpoint/substance_regression/stage2_ebar/OCEANFX/Permethrin/
+main/checkpoint/substance_regression/stage2_ebar/OCEANFX/Cypermethrin/
+additional/Mango/checkpoint/substance_regression/stage2_ebar/Mango/dry_matter/
+
+kaggle-dist
