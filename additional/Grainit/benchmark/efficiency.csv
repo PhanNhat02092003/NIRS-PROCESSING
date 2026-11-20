@@ -1,0 +1,11 @@
+machine, task          , method     , params_M, macs_M, latency_ms_mean, latency_ms_std, throughput_sps, batch_size, device, notes                                                                        
+Grainit, classification, SMART-NIR  ,    0.485,  20.89,          3.9927,         0.0221,        16709.3, 64        , cuda  , nan                                                                          
+Grainit, classification, GuidedDCNet,    1.465,  39.88,        140.7361,         0.8423,          430.5, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                      
+Grainit, quality       , SMART-NIR  ,    0.485,  20.89,          4.0294,         0.0762,        16633.1, 64        , cuda  , nan                                                                          
+Grainit, quality       , GuidedDCNet,    1.464,  39.82,        169.7913,        16.2124,          342.9, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                      
+Grainit, regression    , SMART-NIR  ,    0.485,  20.89,          4.8491,         0.0578,        13680.9, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)
+Grainit, regression    , NirMACNet  ,    4.021, 366.53,          7.3930,         0.1698,         8572.8, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)
+Grainit, regression    , XSpecMamba ,    0.281, 106.10,          4.0656,         0.0532,        14744.9, 64        , cuda  , joint: one model predicts all targets at once                                
+Grainit, classification, LensNIR    ,    0.694,  27.47,          9.9609,         0.2184,         6319.6, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    
+Grainit, regression    , LensNIR    ,    0.694,  27.47,          9.9609,         0.2184,         6319.6, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    
+Grainit, quality       , LensNIR    ,    0.694,  27.47,          9.9609,         0.2184,         6319.6, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    

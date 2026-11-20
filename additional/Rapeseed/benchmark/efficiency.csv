@@ -1,0 +1,11 @@
+machine , task          , method     , params_M, macs_M , latency_ms_mean, latency_ms_std, throughput_sps, batch_size, device, notes                                                                        
+Rapeseed, classification, SMART-NIR  ,    0.510,   68.69,          4.7675,         0.0281,        11709.6, 64        , cuda  , nan                                                                          
+Rapeseed, classification, GuidedDCNet,    1.468,  107.57,        180.7984,         1.1876,          337.5, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                      
+Rapeseed, quality       , SMART-NIR  ,    0.510,   68.69,          4.7916,         0.0675,        11722.4, 64        , cuda  , nan                                                                          
+Rapeseed, quality       , GuidedDCNet,    1.464,  107.36,        179.9815,         0.8573,          340.4, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                      
+Rapeseed, regression    , SMART-NIR  ,    0.510,   68.69,          4.7748,         0.0236,        11721.1, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)
+Rapeseed, regression    , NirMACNet  ,    4.021, 1213.34,          7.4132,         0.1107,         3941.5, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)
+Rapeseed, regression    , XSpecMamba ,    0.281,  106.10,          4.0673,         0.0408,        14766.5, 64        , cuda  , joint: one model predicts all targets at once                                
+Rapeseed, classification, LensNIR    ,    1.138,   89.51,         10.1974,         0.0433,         5187.8, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    
+Rapeseed, regression    , LensNIR    ,    1.138,   89.51,         10.1974,         0.0433,         5187.8, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    
+Rapeseed, quality       , LensNIR    ,    1.138,   89.51,         10.1974,         0.0433,         5187.8, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                    

@@ -93,13 +93,29 @@ def append_safety_row(csv_path: str, substance: str, method: str, metrics: dict)
 
 def append_regression_row(csv_path: str, substance: str, method: str,
                            mse_mean, mse_std, mae_mean, mae_std, rmse_mean, rmse_std,
-                           r2_mean, r2_std):
+                           r2_mean, r2_std,
+                           mae_log_mean=None, mae_log_std=None, rmse_log_mean=None, rmse_log_std=None,
+                           r2_log_mean=None, r2_log_std=None):
+    """mae_log_*/rmse_log_*/r2_log_* are optional (default None, meaning
+    "not computed" -- left out of the row entirely, matching every existing
+    caller's columns/output unchanged): the same metrics computed on
+    log1p(y) instead of y, for a heavy-tailed target (e.g. DanangLeafy6's
+    pesticide concentrations) where raw-scale R2 is dominated by outliers.
+    Passing them adds 6 extra columns after the existing ones; datasets
+    that never pass them keep their original schema."""
     df, cols = _read_rows(csv_path)
     new_row = {
         "substance": substance, "method": method,
         "mse_mean": mse_mean, "mse_std": mse_std, "mae_mean": mae_mean, "mae_std": mae_std,
         "rmse_mean": rmse_mean, "rmse_std": rmse_std, "r2_mean": r2_mean, "r2_std": r2_std,
     }
+    log_metrics = {
+        "mae_log_mean": mae_log_mean, "mae_log_std": mae_log_std,
+        "rmse_log_mean": rmse_log_mean, "rmse_log_std": rmse_log_std,
+        "r2_log_mean": r2_log_mean, "r2_log_std": r2_log_std,
+    }
+    if any(v is not None for v in log_metrics.values()):
+        new_row.update(log_metrics)
     if df is None:
         df = pd.DataFrame([new_row])
     else:
@@ -108,5 +124,39 @@ def append_regression_row(csv_path: str, substance: str, method: str,
     float_cols = {
         "mse_mean": 4, "mse_std": 4, "mae_mean": 4, "mae_std": 4,
         "rmse_mean": 4, "rmse_std": 4, "r2_mean": 2, "r2_std": 2,
+        "mae_log_mean": 4, "mae_log_std": 4, "rmse_log_mean": 4, "rmse_log_std": 4,
+        "r2_log_mean": 2, "r2_log_std": 2,
     }
+    float_cols = {k: v for k, v in float_cols.items() if k in df.columns}
     _write_aligned(csv_path, df, text_cols=["substance", "method"], float_cols=float_cols)
+
+
+def append_efficiency_row(csv_path: str, machine: str, task: str, method: str, params_m, macs_m,
+                           latency_ms_mean, latency_ms_std, throughput_sps, batch_size, device, notes=""):
+    """One row per (machine, task, method): params/MACs are weight-independent
+    (same for every substance a per-substance method like EBAR/NirMACNet is
+    trained on), so unlike append_regression_row this isn't keyed by
+    substance. params_m/macs_m are NaN for non-neural-net methods (EBAR's
+    sklearn StackingRegressor has no FLOPs in the conv/matmul sense).
+    `machine` lets one CSV cover a multi-machine dataset (DanangLeafy6's
+    FLAMENIR/OCEANFX); single-machine datasets just pass their own name."""
+    df, cols = _read_rows(csv_path)
+    # The format is plain comma-separated (not CSV-quoted) -- a literal
+    # comma in free-text "notes" would shift every later column on reload.
+    notes = notes.replace(",", ";")
+    new_row = {
+        "machine": machine, "task": task, "method": method, "params_M": params_m, "macs_M": macs_m,
+        "latency_ms_mean": latency_ms_mean, "latency_ms_std": latency_ms_std,
+        "throughput_sps": throughput_sps, "batch_size": batch_size, "device": device, "notes": notes,
+    }
+    if df is None:
+        df = pd.DataFrame([new_row])
+    else:
+        df = df[~((df["machine"] == machine) & (df["task"] == task) & (df["method"] == method))]
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    float_cols = {"params_M": 3, "macs_M": 2, "latency_ms_mean": 4, "latency_ms_std": 4, "throughput_sps": 1}
+    text_cols = ["machine", "task", "method", "batch_size", "device", "notes"]
+    # NaN-valued float cells (params/macs for non-NN methods) print as "nan"
+    # via the normal float formatter -- fine, matches how a missing cell
+    # looks in every other hand-aligned benchmark CSV in this repo.
+    _write_aligned(csv_path, df, text_cols=text_cols, float_cols=float_cols)

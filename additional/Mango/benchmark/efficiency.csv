@@ -1,0 +1,12 @@
+machine, task          , method     , params_M, macs_M, latency_ms_mean, latency_ms_std, throughput_sps, batch_size, device, notes                                                                            
+Mango  , classification, SMART-NIR  ,    0.479,  10.43,          3.9485,         0.0219,        16306.5, 64        , cuda  , nan                                                                              
+Mango  , classification, GuidedDCNet,    1.473,  26.48,        141.6451,         1.3361,          416.4, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                          
+Mango  , quality       , SMART-NIR  ,    0.479,  10.43,          4.0481,         0.1388,        15869.9, 64        , cuda  , nan                                                                              
+Mango  , quality       , GuidedDCNet,    1.464,  26.04,        144.1300,         2.5239,          418.4, 64        , cuda  , full T=100-step reverse diffusion (real inference path)                          
+Mango  , regression    , SMART-NIR  ,    0.479,  10.43,          4.0762,         0.1516,        15566.5, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)    
+Mango  , regression    , EBAR       ,      nan,    nan,         52.4792,         4.8509,          847.1, 256       , cpu   , sklearn StackingRegressor; CPU only; no MACs; timed from dry_matter_fold_1.joblib
+Mango  , regression    , NirMACNet  ,    4.021, 181.16,          7.4074,         0.0273,         8568.5, 64        , cuda  , one model/substance; num_targets=1 architecture (identical across substances)    
+Mango  , regression    , XSpecMamba ,    0.276, 106.10,          3.8345,         0.4649,        15837.2, 64        , cuda  , joint: one model predicts all targets at once                                    
+Mango  , classification, LensNIR    ,    0.600,  13.84,          9.7300,         0.4073,         6490.2, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                        
+Mango  , regression    , LensNIR    ,    0.600,  13.84,          9.7300,         0.4073,         6490.2, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                        
+Mango  , quality       , LensNIR    ,    0.600,  13.84,          9.7300,         0.4073,         6490.2, 64        , cuda  , joint model: 1 forward pass produces all 3 tasks' outputs                        
