@@ -23,4 +23,4 @@ main/checkpoint/substance_regression/stage2_ebar/OCEANFX/Permethrin/
 main/checkpoint/substance_regression/stage2_ebar/OCEANFX/Cypermethrin/
 additional/Mango/checkpoint/substance_regression/stage2_ebar/Mango/dry_matter/
 
-kaggle-dist
+kaggle-dist*.DS_Store

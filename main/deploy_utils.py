@@ -257,7 +257,9 @@ def infer_substances_severity(spectra: np.ndarray, machine: str, categories: Lis
 
 
 def _coded(code: str, conf: float) -> dict:
-    return {"code": code, "conf-score": round(conf, 4)}
+    # float(): _resolve_leafy_subtype's predict_proba().max() confidences
+    # are numpy.float64, which json/JSONResponse can't serialize directly.
+    return {"code": code, "conf-score": round(float(conf), 4)}
 
 
 # Xà Lách / Cải Bẹ Xanh / Cải Thìa / Mồng Tơi are near-spectrally-identical
@@ -288,12 +290,18 @@ def _load_leafy_pca_lda(machine: str):
 
 def _resolve_leafy_subtype(spectra: np.ndarray, machine: str):
     """Resolves which of the 4 leafy-green categories each row of `spectra`
-    actually is, via the PCA+LDA model. `spectra` must be the ORIGINAL,
-    unbinned request spectra (full wavelength resolution -- the PCA+LDA
-    model was trained on data-new's full-resolution spectra, not
-    GuidedDCNet's BIN=8-reduced OCEANFX input)."""
+    actually is, via the trained model (PCA+LDA for OCEANFX; PCA+RandomForest
+    on SNV+1st-derivative features for FLAMENIR -- see train_leafy_pca_lda.py
+    for why they differ). `spectra` must be the ORIGINAL, unbinned request
+    spectra (full wavelength resolution -- these models were trained on
+    data-new's full-resolution spectra, not GuidedDCNet's BIN=8-reduced
+    OCEANFX input)."""
     bundle = _load_leafy_pca_lda(machine)
-    X = snv(savgol_smooth(spectra)).astype(np.float32)
+    if bundle.get("preprocess", "plain") == "derivative":
+        from scipy.signal import savgol_filter
+        X = savgol_filter(snv(spectra), window_length=11, polyorder=2, deriv=1, axis=1).astype(np.float32)
+    else:
+        X = snv(savgol_smooth(spectra)).astype(np.float32)
     preds = bundle["pipeline"].predict(X)
     confs = bundle["pipeline"].predict_proba(X).max(axis=1)
     return list(preds), list(confs)
