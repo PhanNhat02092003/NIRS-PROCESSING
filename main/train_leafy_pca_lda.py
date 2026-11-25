@@ -67,7 +67,12 @@ N_PCA_CANDIDATES = [10, 20, 30, 50, 80, 120, 180]
 SEED = 42
 LEAFY_SCAN_DIR = f"{os.environ['DATASET_ROOT']}/leafy-position-scan"
 OUT_DIR = "checkpoint/leafy_pca_lda"
-NEWEST_SOURCE = "new-test-data-2026-11"
+# Cross-session CV below always holds out whichever scan session is most
+# recent -- the actual production scenario (a session never seen during
+# training) -- not a blind split of the full pool. Update this whenever a
+# newer scanning session is folded into the CSV (merge_*.py scripts tag
+# each one's rows with a distinct "source" value).
+NEWEST_SOURCE = "new-test-data-2026-11-25"
 FLAMENIR_N_PCA = 80
 
 RECIPES = {
